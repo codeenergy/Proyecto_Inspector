@@ -21,8 +21,10 @@ export function Login() {
 
         if (!success) {
             setError('Invalid credentials. Please try again.');
-            setIsLoading(false);
         }
+
+        // Always reset loading state
+        setIsLoading(false);
     };
 
     return (

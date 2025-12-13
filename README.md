@@ -64,12 +64,7 @@
 
 ## 🔐 Autenticación
 
-El sistema está protegido con autenticación moderna y segura. Usa estas credenciales para acceder:
-
-```
-Username: codeenergy
-Password: Codeenergy77##
-```
+El sistema está protegido con autenticación moderna y segura.
 
 **Características de seguridad:**
 - ✅ Autenticación con localStorage persistence
@@ -126,10 +121,6 @@ npm run dev
 ```
 http://localhost:5173
 ```
-
-**Credenciales de acceso:**
-- Username: `codeenergy`
-- Password: `Codeenergy77##`
 
 ---
 
