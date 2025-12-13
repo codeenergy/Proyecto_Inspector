@@ -14,9 +14,27 @@ from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 import logging
 
 from config import settings
-from modules.user_simulator import UserSimulator
-from modules.alert_system import AlertSystem
-from modules.ai_analyzer import analyze_error_with_ai
+
+# Optional imports - gracefully handle if dependencies are missing
+try:
+    from modules.user_simulator import UserSimulator
+    USER_SIMULATOR_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"User simulator not available (Playwright missing?): {e}")
+    UserSimulator = None
+    USER_SIMULATOR_AVAILABLE = False
+
+try:
+    from modules.alert_system import AlertSystem
+except ImportError as e:
+    logging.warning(f"Alert system not available: {e}")
+    AlertSystem = None
+
+try:
+    from modules.ai_analyzer import analyze_error_with_ai
+except ImportError as e:
+    logging.warning(f"AI analyzer not available: {e}")
+    analyze_error_with_ai = None
 
 logger = logging.getLogger(__name__)
 
@@ -152,8 +170,17 @@ class BotTrafficScheduler:
         try:
             logger.info(f"▶️ Iniciando sesión para {target_config['url']} (intento {retry_count + 1}/{self.max_retries})")
 
-            from modules.user_simulator import run_bot_session
-            result = await run_bot_session(target_config)
+            # Check if user simulator is available
+            if not USER_SIMULATOR_AVAILABLE:
+                logger.error("❌ User simulator not available - Playwright may not be installed")
+                result = {
+                    "success": False,
+                    "stats": {"pages_visited": 0, "ads_clicked": 0},
+                    "log": ["User simulator unavailable - Playwright not installed"]
+                }
+            else:
+                from modules.user_simulator import run_bot_session
+                result = await run_bot_session(target_config)
 
             # Si la sesión fue exitosa, reset retry counter
             if result.get("success"):

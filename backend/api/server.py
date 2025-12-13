@@ -18,9 +18,21 @@ if project_root not in sys.path:
 
 from config import settings
 from modules.scheduler_service import get_scheduler
-from modules.ai_analyzer import analyze_campaign_error, generate_dashboard_insight
-from modules.web_explorer import explore_website
 from init_database import BotTarget, BotSession, init_database
+
+# Optional imports - gracefully handle if dependencies are missing
+try:
+    from modules.ai_analyzer import analyze_campaign_error, generate_dashboard_insight
+except ImportError as e:
+    logger.warning(f"AI analyzer not available: {e}")
+    analyze_campaign_error = None
+    generate_dashboard_insight = None
+
+try:
+    from modules.web_explorer import explore_website
+except ImportError as e:
+    logger.warning(f"Web explorer not available: {e}")
+    explore_website = None
 
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker, Session
