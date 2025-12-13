@@ -73,7 +73,7 @@ beautifulsoup4==4.12.3
 lxml==5.1.0
 
 # CORS & Middleware
-python-cors==1.0.0
+# FastAPI already includes CORS support via CORSMiddleware
 slowapi==0.1.9
 
 # Development
