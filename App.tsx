@@ -38,12 +38,9 @@ interface LogEntry {
 
 function App() {
   const { isAuthenticated, logout } = useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Show login screen if not authenticated
-  if (!isAuthenticated) {
-    return <Login />;
-  }
+  // All hooks must be declared at the top before any conditional returns
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'targets' | 'explorer'>('dashboard');
   const [targets, setTargets] = useState<BotTarget[]>([]);
   const [stats, setStats] = useState<BotStats>({ total_sessions: 0, total_pageviews: 0, total_ad_clicks: 0 });
@@ -51,6 +48,11 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTarget, setEditingTarget] = useState<BotTarget | null>(null);
   const [liveLogs, setLiveLogs] = useState<LogEntry[]>([]);
+
+  // Show login screen if not authenticated (after all hooks are declared)
+  if (!isAuthenticated) {
+    return <Login />;
+  }
 
   // Poll data
   useEffect(() => {
