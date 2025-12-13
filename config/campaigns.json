@@ -1,0 +1,193 @@
+{
+  "campaigns": [
+    {
+      "id": "camp_bf_001",
+      "name": "Black Friday 2024 - Lead Gen",
+      "url": "https://example.com/black-friday?utm_source=google&utm_campaign=bf2024",
+      "enabled": true,
+      "check_interval_minutes": 10,
+      "viewports": ["desktop", "mobile"],
+      "actions": [
+        {
+          "type": "wait",
+          "duration_ms": 1500,
+          "description": "Esperar carga inicial"
+        },
+        {
+          "type": "scroll",
+          "target": "middle",
+          "delay_ms": 2000,
+          "description": "Scroll hasta la mitad de la página"
+        },
+        {
+          "type": "scroll",
+          "target": "bottom",
+          "delay_ms": 2000,
+          "description": "Scroll hasta el final"
+        },
+        {
+          "type": "click",
+          "selector": "#cta-button",
+          "wait_for": ".modal-form",
+          "timeout_ms": 5000,
+          "description": "Click en CTA principal"
+        },
+        {
+          "type": "fill_form",
+          "fields": {
+            "#email": "test@example.com",
+            "#name": "Test User",
+            "#phone": "+1234567890"
+          },
+          "submit_selector": "#submit-btn",
+          "wait_for_success": ".success-message",
+          "description": "Llenar y enviar formulario"
+        }
+      ],
+      "expected_elements": [
+        "#hero-section",
+        "#cta-button",
+        "#contact-form",
+        ".product-grid",
+        ".price-tag"
+      ],
+      "performance": {
+        "max_load_time_seconds": 3.0,
+        "min_lighthouse_score": 80,
+        "max_cumulative_layout_shift": 0.1
+      },
+      "alerts": {
+        "critical": {
+          "email": ["dev@company.com", "marketing@company.com"],
+          "slack": true,
+          "telegram": false,
+          "sms": false
+        },
+        "warning": {
+          "email": ["dev@company.com"],
+          "slack": true
+        }
+      },
+      "crm_integration": {
+        "enabled": true,
+        "provider": "hubspot",
+        "track_conversion": true,
+        "send_test_lead": true
+      },
+      "screenshot": {
+        "enabled": true,
+        "compare_with_baseline": true,
+        "alert_on_visual_diff": true
+      }
+    },
+    {
+      "id": "camp_retargeting_002",
+      "name": "Retargeting - Shoes Collection",
+      "url": "https://example.com/shoes-promo?utm_source=facebook&utm_campaign=retargeting",
+      "enabled": true,
+      "check_interval_minutes": 15,
+      "viewports": ["mobile"],
+      "actions": [
+        {
+          "type": "wait",
+          "duration_ms": 2000
+        },
+        {
+          "type": "scroll",
+          "target": "bottom",
+          "delay_ms": 3000
+        },
+        {
+          "type": "click",
+          "selector": ".product-card:first-child",
+          "wait_for": ".product-detail",
+          "description": "Click en primer producto"
+        },
+        {
+          "type": "click",
+          "selector": "#add-to-cart",
+          "wait_for": ".cart-modal",
+          "description": "Agregar al carrito"
+        }
+      ],
+      "expected_elements": [
+        ".product-grid",
+        ".product-card",
+        "#add-to-cart",
+        ".cart-icon"
+      ],
+      "performance": {
+        "max_load_time_seconds": 4.0,
+        "min_lighthouse_score": 70
+      },
+      "alerts": {
+        "critical": {
+          "email": ["dev@company.com"],
+          "slack": true
+        }
+      },
+      "crm_integration": {
+        "enabled": false
+      }
+    },
+    {
+      "id": "camp_brand_003",
+      "name": "Brand Awareness - Hero Video",
+      "url": "https://example.com/hero-video?utm_source=youtube&utm_campaign=brand2024",
+      "enabled": true,
+      "check_interval_minutes": 20,
+      "viewports": ["desktop", "tablet"],
+      "actions": [
+        {
+          "type": "wait",
+          "duration_ms": 2000
+        },
+        {
+          "type": "click",
+          "selector": ".video-play-button",
+          "description": "Reproducir video"
+        },
+        {
+          "type": "wait",
+          "duration_ms": 10000,
+          "description": "Ver primeros 10s de video"
+        }
+      ],
+      "expected_elements": [
+        "video",
+        ".video-player",
+        ".play-button"
+      ],
+      "performance": {
+        "max_load_time_seconds": 5.0
+      },
+      "alerts": {
+        "critical": {
+          "email": ["marketing@company.com"],
+          "slack": true
+        }
+      },
+      "crm_integration": {
+        "enabled": false
+      }
+    }
+  ],
+  "global_settings": {
+    "user_simulation": {
+      "enable_mouse_movements": true,
+      "enable_random_delays": true,
+      "human_typing_speed": true,
+      "random_scroll_behavior": true
+    },
+    "retry_policy": {
+      "max_retries": 3,
+      "retry_delay_seconds": 60,
+      "exponential_backoff": true
+    },
+    "reporting": {
+      "daily_summary": true,
+      "weekly_report": true,
+      "include_screenshots": true
+    }
+  }
+}

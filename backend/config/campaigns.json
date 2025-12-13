@@ -1,0 +1,26 @@
+{
+    "campaigns": [
+        {
+            "id": "sample_campaign",
+            "name": "Example Campaign",
+            "url": "https://example.com",
+            "enabled": true,
+            "check_interval_minutes": 10,
+            "viewports": [
+                "desktop",
+                "mobile"
+            ],
+            "alerts": {
+                "critical": {
+                    "email": [
+                        "admin@example.com"
+                    ],
+                    "slack": true
+                }
+            },
+            "performance": {
+                "max_load_time_seconds": 3.5
+            }
+        }
+    ]
+}

@@ -1,0 +1,5 @@
+{
+  "name": "Ad-Inspector Dashboard",
+  "description": "A React dashboard for the Ad-Inspector Bot, allowing users to monitor ad campaigns, view performance metrics, and analyze landing page health with AI insights.",
+  "requestFramePermissions": []
+}
