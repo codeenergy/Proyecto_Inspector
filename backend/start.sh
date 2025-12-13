@@ -1,17 +1,14 @@
-#!/bin/bash
-# Railway startup script - Handles initialization before starting server
+#!/bin/sh
+# Railway startup script - Simplified for reliability
 
 echo "🚀 Starting TrafficBot Pro Backend..."
 
-# 1. Install Playwright browsers
-echo "📦 Installing Playwright browsers..."
-python -m playwright install chromium --with-deps || echo "⚠️ Warning: Playwright install failed, continuing..."
+# 1. Initialize database (if init_database.py exists)
+if [ -f "init_database.py" ]; then
+    echo "🗄️ Initializing database..."
+    python init_database.py 2>&1 || echo "⚠️ Warning: Database init failed, API may initialize it on first request"
+fi
 
-# 2. Initialize database
-echo "🗄️ Initializing database..."
-python init_database.py || echo "⚠️ Warning: Database init failed, continuing..."
-
-# 3. Start the FastAPI server
-echo "✅ Starting API server..."
-PORT=${PORT:-8000}
-python -m api.server
+# 2. Start the FastAPI server with environment variables
+echo "✅ Starting API server on PORT=${PORT:-8000}..."
+exec python -m api.server
