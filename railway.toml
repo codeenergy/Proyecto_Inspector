@@ -1,0 +1,8 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "cd backend && pip install -r requirements-minimal.txt"
+
+[deploy]
+startCommand = "cd backend && python -m api.server"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

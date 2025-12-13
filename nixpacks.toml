@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["python311", "python311Packages.pip"]
+
+[phases.install]
+cmds = ["cd backend && pip install -r requirements-minimal.txt"]
+
+[phases.build]
+cmds = ["cd backend && python init_database.py || true"]
+
+[start]
+cmd = "cd backend && python -m api.server"
