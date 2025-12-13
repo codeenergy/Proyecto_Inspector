@@ -64,27 +64,36 @@ def init_database():
         echo=settings.DB_ECHO
     )
 
-    # Crear todas las tablas
-    Base.metadata.drop_all(engine) # Reiniciar DB
+    # Crear todas las tablas (solo si no existen)
+    # IMPORTANTE: No usar drop_all en producción para preservar datos
+    if settings.ENVIRONMENT == "development":
+        logger.warning("🔄 Modo desarrollo: Reiniciando base de datos...")
+        Base.metadata.drop_all(engine)
+
     Base.metadata.create_all(engine)
 
     logger.info("✅ Base de datos inicializada correctamente")
-    
+
     # Crear sesión
     Session = sessionmaker(bind=engine)
     session = Session()
-    
-    # Crear target por defecto
-    default_target = BotTarget(
-        url="https://example.com",
-        target_pageviews=5,
-        ad_click_probability=0.3,
-        viewport={"width": 1366, "height": 768}
-    )
-    session.add(default_target)
-    session.commit()
-    
-    logger.info("✅ Target por defecto creado")
+
+    # Verificar si ya existe un target (no crear duplicados)
+    existing_targets = session.query(BotTarget).count()
+
+    if existing_targets == 0:
+        # Crear target por defecto solo si no hay ninguno
+        default_target = BotTarget(
+            url="https://example.com",
+            target_pageviews=5,
+            ad_click_probability=0.3,
+            viewport={"width": 1366, "height": 768}
+        )
+        session.add(default_target)
+        session.commit()
+        logger.info("✅ Target por defecto creado")
+    else:
+        logger.info(f"ℹ️ Base de datos ya tiene {existing_targets} targets")
 
     session.close()
     engine.dispose()
