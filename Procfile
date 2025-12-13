@@ -1,1 +1,1 @@
-web: chmod +x start.sh && ./start.sh
+web: cd backend && python -m api.server
