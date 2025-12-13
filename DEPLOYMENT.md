@@ -1,14 +1,13 @@
-# 🚀 Guía de Despliegue - Proyecto Inspector
+# 🚀 Deployment Guide - TrafficBot Pro
 
-## Problema Resuelto
+## 🔴 Solución al "Connection Error"
 
-El error "Connection error" en producción se debía a que el frontend estaba configurado para conectarse a `http://localhost:8001`, que no existe en el entorno de producción.
+El error **"Connection error"** al crear targets ocurre porque:
+- ✅ Frontend desplegado en Vercel: `https://proyecto-inspector.vercel.app`
+- ❌ Backend NO desplegado (solo en `localhost:8001`)
+- ❌ Frontend no puede conectarse al backend → **Connection Error**
 
-## Solución Implementada
-
-✅ **Frontend**: Configurado para usar variables de entorno  
-✅ **Backend**: CORS actualizado para permitir el dominio de producción  
-✅ **TypeScript**: Definiciones de tipos para variables de entorno  
+## ✅ Solución: Deploy Backend + Configurar Vercel
 
 ---
 
