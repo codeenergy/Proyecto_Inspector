@@ -346,11 +346,15 @@ async def global_exception_handler(request, exc):
 
 if __name__ == "__main__":
     import uvicorn
+    import os
+
+    # Railway assigns PORT dynamically - use it if available
+    port = int(os.getenv("PORT", settings.API_PORT))
 
     uvicorn.run(
         "server:app",
         host=settings.API_HOST,
-        port=settings.API_PORT,
+        port=port,
         reload=settings.DEBUG,
         log_level=settings.LOG_LEVEL.lower()
     )
