@@ -42,7 +42,12 @@ class Settings(BaseSettings):
     API_PORT: int = Field(default=8000, env="API_PORT")
     API_PREFIX: str = "/api/v1"
     CORS_ORIGINS: List[str] = Field(
-        default=["http://localhost:5173", "http://localhost:3000"],
+        default=[
+            "http://localhost:5173",
+            "http://localhost:5174", 
+            "http://localhost:3000",
+            "https://proyecto-inspector.vercel.app"
+        ],
         env="CORS_ORIGINS"
     )
 

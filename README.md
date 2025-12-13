@@ -1,23 +1,23 @@
 <div align="center">
 
-# 🤖 Ad-Inspector Bot
+# 🤖 TrafficBot Pro
 
-**Agente AI Autónomo 24/7 para Monitoreo de Anuncios y Conversiones**
+**Bot de Tráfico Automatizado 24/7 con Dashboard Moderno**
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11+-green.svg)
 ![Node](https://img.shields.io/badge/node-20+-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-orange.svg)
 
-[🚀 Inicio Rápido](#-inicio-rápido) • [📖 Documentación](#-documentación) • [✨ Características](#-características) • [🎯 Demo](#-demo)
+[🚀 Inicio Rápido](#-inicio-rápido) • [🔐 Autenticación](#-autenticación) • [✨ Características](#-características) • [📦 Deployment](#-deployment-to-vercel)
 
 </div>
 
 ---
 
-## 📋 ¿Qué es Ad-Inspector Bot?
+## 📋 ¿Qué es TrafficBot Pro?
 
-**Ad-Inspector Bot** es un agente de inteligencia artificial que trabaja 24/7 monitoreando tus anuncios y landing pages, simulando el comportamiento de usuarios reales para:
+**TrafficBot Pro** es un bot de tráfico automatizado que trabaja 24/7 visitando tus sitios web, simulando el comportamiento de usuarios reales para:
 
 - ✅ **Detectar errores antes de perder presupuesto** - Identifica anuncios rotos, formularios que no funcionan, páginas caídas
 - 🎯 **Simular conversiones completas** - Prueba todo el embudo: click en anuncio → navegación → formulario → conversión
@@ -62,34 +62,35 @@
 
 ---
 
+## 🔐 Autenticación
+
+El sistema está protegido con autenticación moderna y segura. Usa estas credenciales para acceder:
+
+```
+Username: codeenergy
+Password: Codeenergy77##
+```
+
+**Características de seguridad:**
+- ✅ Autenticación con localStorage persistence
+- ✅ Login/Logout completo
+- ✅ Rutas protegidas
+- ✅ Diseño glassmorphism moderno
+- ✅ Responsive en todos los dispositivos
+
+---
+
 ## 🚀 Inicio Rápido
 
-### Opción 1: Script Automático (Recomendado)
+### Instalación Local
 
-**Windows:**
+1. **Clonar el repositorio**
 ```bash
-# Descargar e instalar
-git clone https://github.com/tu-usuario/Ad-Inspector-Bot.git
-cd Ad-Inspector-Bot
-
-# Ejecutar script de inicio
-start.bat
+git clone https://github.com/codeenergy/Proyecto_Inspector.git
+cd Proyecto_Inspector
 ```
 
-**Linux/Mac:**
-```bash
-# Descargar e instalar
-git clone https://github.com/tu-usuario/Ad-Inspector-Bot.git
-cd Ad-Inspector-Bot
-
-# Dar permisos y ejecutar
-chmod +x start.sh
-./start.sh
-```
-
-### Opción 2: Manual
-
-1. **Configurar Backend Python**
+2. **Configurar Backend Python**
 ```bash
 cd backend
 python -m venv venv
@@ -99,33 +100,36 @@ playwright install chromium
 
 # Copiar y editar variables de entorno
 cp .env.example .env
-# Editar .env con tu GEMINI_API_KEY
 
 # Inicializar base de datos
 python init_database.py --seed
 ```
 
-2. **Configurar Frontend React**
+3. **Configurar Frontend React**
 ```bash
 npm install
-cp .env.example .env.local
-# Editar .env.local con tu GEMINI_API_KEY
+cp .env.example .env
+# Editar .env con la URL de tu backend
 ```
 
-3. **Iniciar Servicios**
+4. **Iniciar Servicios**
 ```bash
-# Terminal 1: Backend
+# Terminal 1: Backend (auto-inicia scheduler 24/7)
 cd backend
-python main.py
+python -m api.server
 
 # Terminal 2: Frontend
 npm run dev
 ```
 
-4. **Abrir Dashboard**
+5. **Abrir Dashboard**
 ```
 http://localhost:5173
 ```
+
+**Credenciales de acceso:**
+- Username: `codeenergy`
+- Password: `Codeenergy77##`
 
 ---
 
@@ -241,18 +245,39 @@ Abre [http://localhost:5173](http://localhost:5173)
 
 ---
 
-## 🐳 Deploy con Docker
+## 📦 Deployment to Vercel
 
+### Frontend Deployment
+
+1. **Install Vercel CLI**
 ```bash
-# Producción con Docker Compose
-docker-compose up -d
-
-# Ver logs
-docker-compose logs -f
-
-# Detener
-docker-compose down
+npm i -g vercel
 ```
+
+2. **Deploy**
+```bash
+vercel --prod
+```
+
+3. **Configure Environment Variables** in Vercel Dashboard:
+```
+VITE_API_BASE_URL=https://your-backend-url.com
+```
+
+### Backend Deployment
+
+Para el backend, recomendamos:
+- **Railway.app** - Deploy automático desde GitHub
+- **Render.com** - Free tier con auto-sleep
+- **Fly.io** - Global edge deployment
+- **VPS** (DigitalOcean, AWS, etc.) - Para control total
+
+**Características 24/7:**
+- ✅ Scheduler se auto-inicia con el servidor
+- ✅ Error recovery automático
+- ✅ Retry logic con exponential backoff
+- ✅ Persistencia en base de datos
+- ✅ Job monitoring y logging
 
 ---
 

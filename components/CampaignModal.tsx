@@ -9,7 +9,7 @@ interface CampaignModalProps {
   initialData?: BotTarget | null; // Support edit mode
 }
 
-const API_BASE = 'http://localhost:8001';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001';
 
 export const CampaignModal: React.FC<CampaignModalProps> = ({ isOpen, onClose, onSave, initialData }) => {
   const [url, setUrl] = useState('');
@@ -77,84 +77,132 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ isOpen, onClose, o
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-2">
-            <Target className="text-blue-500" />
-            <h2 className="text-xl font-bold text-white">
-              {initialData ? 'Edit Target' : 'Add Traffic Target'}
-            </h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fadeIn">
+      {/* Glassmorphism Modal */}
+      <div className="relative w-full max-w-lg animate-slideUp">
+        {/* Gradient Glow Effect */}
+        <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/30 to-purple-600/30 rounded-2xl blur-xl"></div>
+
+        {/* Modal Content */}
+        <div className="relative bg-slate-900/90 backdrop-blur-2xl border border-slate-700/50 rounded-2xl shadow-2xl overflow-hidden">
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-purple-600/5 pointer-events-none"></div>
+
+          <div className="relative z-10 p-6 md:p-8">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6 md:mb-8">
+              <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-br from-blue-600 to-purple-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/30">
+                  <Target className="text-white" size={20} />
+                </div>
+                <h2 className="text-xl md:text-2xl font-bold text-white">
+                  {initialData ? 'Edit Target' : 'Add Traffic Target'}
+                </h2>
+              </div>
+              <button
+                onClick={onClose}
+                className="text-slate-400 hover:text-white hover:bg-slate-800/50 p-2 rounded-lg transition-all"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* URL Input */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Target URL</label>
+                <input
+                  required
+                  type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                  placeholder="https://example.com/blog-post"
+                />
+              </div>
+
+              {/* Grid Inputs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+                    <Eye size={16} className="text-blue-400" /> Pages / Session
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={pageviews}
+                    onChange={(e) => setPageviews(Number(e.target.value))}
+                    className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+                    <MousePointer2 size={16} className="text-purple-400" /> Ad Click %
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1.0"
+                    step="0.05"
+                    value={adProb}
+                    onChange={(e) => setAdProb(Number(e.target.value))}
+                    className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                  />
+                  <p className="text-xs text-slate-500 mt-1.5">0.0 to 1.0 (e.g. 0.2 = 20%)</p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-4 flex flex-col sm:flex-row gap-3 sm:justify-end">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-800/50 border border-slate-700/50 text-slate-300 hover:bg-slate-700/50 hover:text-white transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      <span>{initialData ? 'Update Target' : 'Create Target'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
-            <X size={24} />
-          </button>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-1">Target URL</label>
-            <input
-              required
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="https://example.com/blog-post"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1 flex items-center gap-2">
-                <Eye size={16} /> Pages / Session
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="50"
-                value={pageviews}
-                onChange={(e) => setPageviews(Number(e.target.value))}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1 flex items-center gap-2">
-                <MousePointer2 size={16} /> Ad Click %
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="1.0"
-                step="0.05"
-                value={adProb}
-                onChange={(e) => setAdProb(Number(e.target.value))}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="text-xs text-slate-500 mt-1">0.0 to 1.0 (e.g. 0.2 = 20%)</p>
-            </div>
-          </div>
-
-          <div className="pt-4 flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500 flex items-center space-x-2 transition-colors disabled:opacity-50"
-            >
-              <Save size={18} />
-              <span>{isSubmitting ? 'Creating...' : 'Create Target'}</span>
-            </button>
-          </div>
-        </form>
       </div>
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

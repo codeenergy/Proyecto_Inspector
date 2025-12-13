@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(./venv/Scripts/playwright install:*)",
-      "Bash(./venv/Scripts/python:*)"
-    ]
-  }
-}
