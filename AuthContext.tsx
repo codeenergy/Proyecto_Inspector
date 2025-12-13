@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface AuthContextType {
     isAuthenticated: boolean;
@@ -13,15 +13,11 @@ const VALID_PASSWORD = 'Codeenergy77##';
 const AUTH_KEY = 'trafficbot_auth';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-
-    useEffect(() => {
-        // Check if user is already authenticated
+    // Check localStorage immediately on initialization to prevent flash
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
         const authStatus = localStorage.getItem(AUTH_KEY);
-        if (authStatus === 'true') {
-            setIsAuthenticated(true);
-        }
-    }, []);
+        return authStatus === 'true';
+    });
 
     const login = (username: string, password: string): boolean => {
         if (username === VALID_USERNAME && password === VALID_PASSWORD) {
