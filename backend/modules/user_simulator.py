@@ -357,30 +357,70 @@ class UserSimulator:
         return result
 
     async def _interact_with_ads(self, probability: float) -> bool:
-        """Buscar e interactuar con anuncios"""
-        # Selectores comunes de anuncios y iframes
+        """Buscar e interactuar con anuncios - Optimizado para Monetag"""
+        # Selectores específicos para Monetag y otros ad networks
         ad_selectors = [
+            # Google Ads
             'iframe[src*="googleads"]',
             'iframe[id*="google_ads"]',
             '.adsbygoogle',
             'div[id*="div-gpt-ad"]',
             'a[href*="doubleclick"]',
             '[aria-label="Advertisement"]',
-            # Monetag / PropellerAds / Vignettes
+
+            # ========== MONETAG ESPECÍFICO ==========
+            # Push Notifications (Monetag)
+            'div[id*="push-notification"]',
+            'div[class*="push-notification"]',
+            '[id*="monetag-push"]',
+            '[class*="monetag-push"]',
+            'div[data-monetag-type="push"]',
+
+            # Direct Link (Monetag) - Links que abren en nueva pestaña
+            'a[target="_blank"][href*="monetag"]',
+            'a[target="_blank"][href*="propellerads"]',
+            'a[data-monetag="direct-link"]',
+
+            # In-Page Push (Monetag) - Notificaciones dentro de la página
+            'div[class*="in-page-push"]',
+            'div[id*="in-page-push"]',
+            '[class*="inpage-push"]',
+            '[id*="inpage"]',
+            'div[class*="native-ad"]',
+            'div[data-ad-format="in-page-push"]',
+
+            # Vignette Banner (Monetag) - Anuncios de página completa
+            'div[class*="vignette"]',
+            'div[id*="vignette"]',
+            'div[class*="interstitial"]',
+            'div[id*="interstitial"]',
+            'div[style*="position: fixed"][style*="z-index"]',
+            'div[data-ad-format="vignette"]',
+
+            # Monetag General
             'iframe[src*="monetag"]',
+            'iframe[data-src*="monetag"]',
             '[class*="monetag"]',
             '[id*="monetag"]',
             'script[src*="monetag"]',
             '[href*="monetag"]',
+            'div[data-monetag]',
+
+            # PropellerAds (similar a Monetag)
+            '[class*="propeller"]',
+            '[id*="propeller"]',
+            'iframe[src*="propellerads"]',
+
+            # Genéricos de alto CPM
             'div.ad-container',
-            # Interstitials / Vignettes / Push Wrappers
-            'div[class*="interstitial"]',
-            'div[id*="vignette"]',
-            '[class*="popup"]',
-            '[class*="overlay"]',
-            'div[style*="z-index: 2147483647"]', # Max Z-Index often used by ads
+            'div[class*="popup"]',
+            'div[class*="overlay"]',
+            'div[style*="z-index: 2147483647"]', # Max Z-Index
             'div[class*="pusher"]',
-            'div[class*="in-page-push"]'
+            'div[class*="notification-banner"]',
+            'div[role="dialog"]', # Popups modales
+            '[data-ad-unit]',
+            '[data-ad-slot]'
         ]
         
         found_ads = []
@@ -401,28 +441,65 @@ class UserSimulator:
                 await asyncio.sleep(random.random() * 2)
             except: pass
 
-        # Decidir si clickear
+        # Decidir si clickear (aumentado para Monetag)
         if random.random() < probability:
             target_ad = random.choice(found_ads)
             try:
-                logger.info("🖱️ Intentando click en anuncio...")
-                await target_ad.click(modifiers=["Control"]) # Abrir en nueva tab para no perder sesión
-                
-                # Logic to handle new tab and return success
+                logger.info("🖱️ Intentando click en anuncio Monetag...")
+
+                # Detectar tipo de anuncio Monetag
+                ad_class = await target_ad.get_attribute('class') or ''
+                ad_id = await target_ad.get_attribute('id') or ''
+                ad_type = "unknown"
+
+                if 'push' in ad_class.lower() or 'push' in ad_id.lower():
+                    ad_type = "Push Notification"
+                elif 'vignette' in ad_class.lower() or 'vignette' in ad_id.lower():
+                    ad_type = "Vignette Banner"
+                elif 'in-page' in ad_class.lower() or 'inpage' in ad_id.lower():
+                    ad_type = "In-Page Push"
+                elif 'direct' in ad_class.lower() or await target_ad.get_attribute('target') == '_blank':
+                    ad_type = "Direct Link"
+
+                logger.info(f"💰 Detectado anuncio tipo: {ad_type}")
+
+                # Click en el anuncio (Ctrl+Click para abrir en nueva pestaña)
+                await target_ad.scroll_into_view_if_needed()
+                await asyncio.sleep(random.uniform(0.5, 1.5))
+                await target_ad.click(modifiers=["Control"])
+
+                # Registrar click exitoso
                 self.session_data["ads_clicked"] += 1
-                await asyncio.sleep(5) 
-                
-                # Close extra tabs if opened
+                logger.info(f"✅ Click exitoso en anuncio {ad_type}")
+
+                # Esperar a que se abra la nueva pestaña/popup
+                await asyncio.sleep(random.uniform(3, 6))
+
+                # Cerrar pestañas extra (Monetag a veces abre múltiples)
                 pages = self.simulator.context.pages
                 if len(pages) > 1:
+                    logger.info(f"🔄 Cerrando {len(pages) - 1} pestañas de anuncios...")
                     for p in pages[1:]:
-                         try: await p.close()
-                         except: pass
+                        try:
+                            # Esperar un poco en la pestaña del anuncio (aumenta revenue)
+                            await asyncio.sleep(random.uniform(2, 4))
+                            await p.close()
+                        except:
+                            pass
 
                 return True
+
             except Exception as e:
-                logger.error(f"Falló click en anuncio: {e}")
-                
+                logger.error(f"❌ Falló click en anuncio: {e}")
+                # Intentar click simple si Ctrl+Click falló
+                try:
+                    await target_ad.click()
+                    self.session_data["ads_clicked"] += 1
+                    await asyncio.sleep(3)
+                    return True
+                except:
+                    pass
+
         return False
 
     async def _setup_page(self, context, target_config, url):
