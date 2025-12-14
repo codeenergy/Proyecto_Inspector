@@ -5,8 +5,7 @@ nixPkgs = ["python311"]
 cmds = [
   "python -m venv /opt/venv",
   ". /opt/venv/bin/activate && cd backend && pip install -r requirements-full.txt",
-  ". /opt/venv/bin/activate && playwright install chromium",
-  ". /opt/venv/bin/activate && playwright install-deps chromium"
+  ". /opt/venv/bin/activate && playwright install --with-deps chromium || . /opt/venv/bin/activate && playwright install chromium"
 ]
 
 [phases.build]
