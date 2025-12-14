@@ -312,6 +312,40 @@ async def get_live_sessions(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Web Explorer
+class WebExploreRequest(BaseModel):
+    url: str
+    max_depth: int = 2
+    max_pages: int = 30
+    viewport: str = "desktop"
+
+@app.post("/explore/website")
+async def explore_website_endpoint(request: WebExploreRequest):
+    """Explore a website like a real user"""
+    try:
+        from modules.web_explorer import WebExplorer
+
+        logger.info(f"🔍 Starting web exploration for {request.url}")
+
+        explorer = WebExplorer(
+            base_url=request.url,
+            max_depth=request.max_depth,
+            max_pages=request.max_pages
+        )
+
+        result = await explorer.explore_domain(viewport=request.viewport)
+
+        return {
+            "status": "success",
+            "data": result
+        }
+    except Exception as e:
+        logger.exception(f"Error in web exploration: {e}")
+        return {
+            "status": "error",
+            "message": f"Error en la exploración: {str(e)}"
+        }
+
 # Logs & Stats
 @app.get("/stats")
 async def get_stats(db: Session = Depends(get_db)):
@@ -319,12 +353,12 @@ async def get_stats(db: Session = Depends(get_db)):
     try:
         from sqlalchemy import func
         from init_database import BotSession
-        
+
         # Aggregate stats using SQL for speed and persistence
         total_sessions = db.query(func.count(BotSession.id)).scalar() or 0
         total_pageviews = db.query(func.sum(BotSession.pages_visited)).scalar() or 0
         total_ad_clicks = db.query(func.sum(BotSession.ads_clicked)).scalar() or 0
-        
+
         return {
             "status": "success",
             "data": {
