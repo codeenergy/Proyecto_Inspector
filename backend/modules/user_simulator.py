@@ -314,9 +314,9 @@ class UserSimulator:
                 current_url = self.page.url
                 logger.info(f"📄 Visitando página #{self.session_data['pages_visited']}: {current_url}")
                 
-                # Simular lectura y scroll
-                await self.simulator.human_scroll(self.page, target="bottom", steps=random.randint(5, 12))
-                await self.simulator.simulate_reading(self.page, duration_seconds=random.randint(3, 8))
+                # Simular lectura y scroll (optimizado para velocidad)
+                await self.simulator.human_scroll(self.page, target="bottom", steps=random.randint(3, 5))
+                await self.simulator.simulate_reading(self.page, duration_seconds=random.randint(1, 3))
 
                 # Scroll arriba un poco
                 await self.simulator.human_scroll(self.page, target="middle")
