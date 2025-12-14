@@ -39,3 +39,6 @@ inspector.db
 .DS_Store
 Thumbs.db
 nul
+
+.vercel
+.env*.local
