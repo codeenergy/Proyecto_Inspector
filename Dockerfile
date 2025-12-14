@@ -1,5 +1,6 @@
 # Railway Dockerfile para TrafficBot Pro
-FROM python:3.11-slim
+# Usar imagen oficial de Playwright que incluye todas las dependencias del sistema
+FROM mcr.microsoft.com/playwright/python:v1.41.0-jammy
 
 # Variables de entorno
 ENV PYTHONUNBUFFERED=1 \
@@ -10,21 +11,11 @@ ENV PYTHONUNBUFFERED=1 \
 # Directorio de trabajo
 WORKDIR /app
 
-# Instalar dependencias del sistema necesarias para Playwright
-RUN apt-get update && apt-get install -y \
-    wget \
-    gnupg \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
 # Copiar archivos de requirements
 COPY backend/requirements-full.txt backend/requirements-full.txt
 
 # Instalar dependencias de Python
 RUN pip install --no-cache-dir -r backend/requirements-full.txt
-
-# Instalar Playwright Chromium (sin system deps para evitar problemas)
-RUN playwright install chromium
 
 # Copiar el resto del código
 COPY . .
