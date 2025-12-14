@@ -2,7 +2,8 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "nixpacksConfigPath": "nixpacks.toml"
+    "nixpacksConfigPath": "nixpacks.toml",
+    "buildCommand": "echo 'Build completed by nixpacks install phase'"
   },
   "deploy": {
     "startCommand": ". /opt/venv/bin/activate && cd backend && chmod +x start.sh && ./start.sh",
