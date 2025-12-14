@@ -472,8 +472,8 @@ class UserSimulator:
                 self.session_data["ads_clicked"] += 1
                 logger.info(f"✅ Click exitoso en anuncio {ad_type}")
 
-                # Esperar a que se abra la nueva pestaña/popup
-                await asyncio.sleep(random.uniform(3, 6))
+                # Esperar a que se abra la nueva pestaña/popup (tiempo realista)
+                await asyncio.sleep(random.uniform(5, 10))
 
                 # Cerrar pestañas extra (Monetag a veces abre múltiples)
                 pages = self.simulator.context.pages
@@ -481,8 +481,20 @@ class UserSimulator:
                     logger.info(f"🔄 Cerrando {len(pages) - 1} pestañas de anuncios...")
                     for p in pages[1:]:
                         try:
-                            # Esperar un poco en la pestaña del anuncio (aumenta revenue)
-                            await asyncio.sleep(random.uniform(2, 4))
+                            # AUMENTADO: Permanece 15-30 segundos en cada anuncio como usuario real
+                            # Esto MAXIMIZA el revenue (viewability + engagement)
+                            wait_time = random.uniform(15, 30)
+                            logger.info(f"⏱️ Permaneciendo {wait_time:.1f}s en anuncio (aumentando revenue)")
+                            await asyncio.sleep(wait_time)
+
+                            # Simular scroll en la página del anuncio (engagement realista)
+                            try:
+                                await p.evaluate("window.scrollBy(0, window.innerHeight / 2)")
+                                await asyncio.sleep(random.uniform(2, 5))
+                                await p.evaluate("window.scrollBy(0, -window.innerHeight / 4)")
+                            except:
+                                pass
+
                             await p.close()
                         except:
                             pass
