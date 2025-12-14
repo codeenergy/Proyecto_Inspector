@@ -44,12 +44,23 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = Field(
         default=[
             "http://localhost:5173",
-            "http://localhost:5174", 
+            "http://localhost:5174",
             "http://localhost:3000",
             "https://proyecto-inspector.vercel.app"
         ],
         env="CORS_ORIGINS"
     )
+
+    @validator("CORS_ORIGINS", pre=True)
+    def parse_cors_origins(cls, v):
+        """Parse CORS_ORIGINS from string or JSON array"""
+        if isinstance(v, str):
+            # If it's a plain string (not JSON), convert to list
+            if not v.strip().startswith('['):
+                # Split by comma or use as single value
+                return [origin.strip() for origin in v.split(',')] if ',' in v else [v.strip()]
+            # If it's a JSON array string, let pydantic parse it
+        return v
 
     # Scheduler Configuration
     CHECK_INTERVAL_MINUTES: int = Field(default=10, env="CHECK_INTERVAL_MINUTES")
