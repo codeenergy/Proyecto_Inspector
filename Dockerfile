@@ -35,8 +35,11 @@ RUN chmod +x backend/start.sh
 # Inicializar base de datos (permite fallar)
 RUN cd backend && python init_database.py || true
 
+# Cambiar al directorio backend
+WORKDIR /app/backend
+
 # Exponer puerto (Railway usa la variable $PORT)
 EXPOSE 8080
 
 # Comando de inicio
-CMD ["sh", "-c", "cd backend && ./start.sh"]
+CMD ["./start.sh"]
