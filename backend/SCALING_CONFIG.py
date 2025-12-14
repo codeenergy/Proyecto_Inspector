@@ -54,6 +54,34 @@ class ScalingConfig:
         'description': 'Railway Pro - Objetivo $5K/mes alcanzado ✅'
     }
 
+    # Railway Pro - Conservador Multi-Dominio
+    PRO_CONSERVATIVE = {
+        'max_concurrent_sessions': 6,
+        'max_targets_recommended': 24,
+        'pageviews_per_target': 15,
+        'estimated_daily_pageviews': 5760,
+        'estimated_monthly_pageviews': 172800,
+        'monetag_rpm': 2.80,  # Promedio multi-plataforma
+        'estimated_monthly_revenue': 484,
+        'monthly_cost': 20,
+        'net_profit': 464,
+        'description': 'Railway Pro - 4 dominios multi-plataforma (estable)'
+    }
+
+    # Railway Pro - MÁXIMO (Agresivo) ⭐
+    PRO_MAX = {
+        'max_concurrent_sessions': 8,
+        'max_targets_recommended': 32,
+        'pageviews_per_target': 20,
+        'estimated_daily_pageviews': 15360,
+        'estimated_monthly_pageviews': 460800,
+        'monetag_rpm': 2.50,  # Promedio multi-plataforma
+        'estimated_monthly_revenue': 1152,
+        'monthly_cost': 20,
+        'net_profit': 1132,
+        'description': 'Railway Pro MÁXIMO - 8 sesiones, 6 dominios multi-plataforma'
+    }
+
     # Hetzner VPS - Máximo Performance
     VPS_MAX = {
         'max_concurrent_sessions': 10,
@@ -156,6 +184,120 @@ class MonetTagConfig:
 
 
 # =============================================================================
+# CONFIGURACIÓN MULTI-PLATAFORMA DE ADS
+# =============================================================================
+
+class MultiPlatformAdsConfig:
+    """
+    Configuración para múltiples plataformas de anuncios
+    """
+
+    # RPM promedio por plataforma (tráfico US/CA/UK optimizado)
+    PLATFORMS = {
+        'monetag': {
+            'rpm_optimized': 3.00,
+            'rpm_global': 1.50,
+            'approval_difficulty': 'Muy fácil',
+            'bot_detection_risk': 'Bajo',
+            'recommended': True,
+            'description': 'Pop-unders + Push + Native - Acepta todo tipo de tráfico'
+        },
+        'propellerads': {
+            'rpm_optimized': 2.50,
+            'rpm_global': 1.20,
+            'approval_difficulty': 'Fácil',
+            'bot_detection_risk': 'Medio-Bajo',
+            'recommended': True,
+            'description': 'Similar a Monetag, buena alternativa'
+        },
+        'admaven': {
+            'rpm_optimized': 1.80,
+            'rpm_global': 1.00,
+            'approval_difficulty': 'Fácil',
+            'bot_detection_risk': 'Bajo',
+            'recommended': True,
+            'description': 'RPM más bajo pero muy permisivo'
+        },
+        'media.net': {
+            'rpm_optimized': 5.00,
+            'rpm_global': 2.00,
+            'approval_difficulty': 'Media-Alta',
+            'bot_detection_risk': 'Alto',
+            'recommended': False,
+            'description': 'Yahoo/Bing Ads - Requiere tráfico de calidad'
+        },
+        'google_adsense': {
+            'rpm_optimized': 10.00,
+            'rpm_global': 4.00,
+            'approval_difficulty': 'Muy difícil',
+            'bot_detection_risk': 'Muy Alto',
+            'recommended': False,
+            'description': '⚠️ NO RECOMENDADO - Detección de bots inmediata'
+        }
+    }
+
+    # Configuración recomendada de dominios por plataforma
+    DOMAIN_DISTRIBUTION = {
+        'conservative': {
+            'total_domains': 4,
+            'monetag': 2,
+            'propellerads': 2,
+            'admaven': 0,
+            'description': 'Configuración conservadora - Bajo riesgo'
+        },
+        'balanced': {
+            'total_domains': 5,
+            'monetag': 2,
+            'propellerads': 2,
+            'admaven': 1,
+            'description': 'Configuración balanceada - Riesgo medio'
+        },
+        'aggressive': {
+            'total_domains': 6,
+            'monetag': 2,
+            'propellerads': 2,
+            'admaven': 2,
+            'description': 'Configuración agresiva - Máximo revenue'
+        }
+    }
+
+    @classmethod
+    def calculate_multi_platform_revenue(cls, domains_config, pageviews_per_domain_per_month):
+        """
+        Calcula revenue esperado con múltiples plataformas
+
+        Args:
+            domains_config: 'conservative', 'balanced', o 'aggressive'
+            pageviews_per_domain_per_month: pageviews mensuales por dominio
+
+        Returns:
+            dict con breakdown de revenue por plataforma
+        """
+        config = cls.DOMAIN_DISTRIBUTION[domains_config]
+        total_revenue = 0
+        breakdown = {}
+
+        for platform in ['monetag', 'propellerads', 'admaven']:
+            domain_count = config.get(platform, 0)
+            if domain_count > 0:
+                rpm = cls.PLATFORMS[platform]['rpm_optimized']
+                revenue = (pageviews_per_domain_per_month * domain_count * rpm) / 1000
+                breakdown[platform] = {
+                    'domains': domain_count,
+                    'rpm': rpm,
+                    'pageviews': pageviews_per_domain_per_month * domain_count,
+                    'revenue': round(revenue, 2)
+                }
+                total_revenue += revenue
+
+        return {
+            'total_revenue': round(total_revenue, 2),
+            'breakdown': breakdown,
+            'total_domains': config['total_domains']
+        }
+
+
+# =============================================================================
 # OPTIMIZACIONES DE PLAYWRIGHT
 # =============================================================================
 
@@ -232,9 +374,9 @@ def calculate_revenue(config=ACTIVE_CONFIG):
 # =============================================================================
 
 if __name__ == "__main__":
-    print("\n" + "="*70)
+    print("\n" + "="*80)
     print("📊 TRAFFICBOT PRO - CONFIGURACIÓN DE ESCALADO ACTIVA")
-    print("="*70 + "\n")
+    print("="*80 + "\n")
 
     print(f"Nivel: {ACTIVE_CONFIG['description']}")
     print(f"Sesiones concurrentes: {ACTIVE_CONFIG['max_concurrent_sessions']}")
@@ -242,7 +384,7 @@ if __name__ == "__main__":
     print(f"Pageviews por target: {ACTIVE_CONFIG['pageviews_per_target']}")
     print()
 
-    print("💰 PROYECCIÓN DE REVENUE:")
+    print("💰 PROYECCIÓN DE REVENUE (CONFIGURACIÓN ACTUAL):")
     revenue = calculate_revenue()
     for key, value in revenue.items():
         print(f"  {key.replace('_', ' ').title()}: {value}")
@@ -252,6 +394,53 @@ if __name__ == "__main__":
     combined_rpm = MonetTagConfig.get_combined_rpm()
     print(f"  RPM esperado (multi-formato): ${combined_rpm:.2f}")
 
-    print("\n" + "="*70)
+    print("\n" + "="*80)
+    print("🚀 POTENCIAL CON RAILWAY PRO + MULTI-PLATAFORMA")
+    print("="*80 + "\n")
+
+    # Calcular pageviews por dominio con Railway Pro MAX
+    pageviews_per_domain_month = 76770  # Según MULTI_PLATFORM_ADS_GUIDE.md
+
+    print("Configuración Conservadora (4 dominios):")
+    conservative = MultiPlatformAdsConfig.calculate_multi_platform_revenue(
+        'conservative', pageviews_per_domain_month
+    )
+    print(f"  Total Revenue/mes: ${conservative['total_revenue']:.2f}")
+    print(f"  Ganancia neta: ${conservative['total_revenue'] - 20:.2f}/mes")
+    for platform, data in conservative['breakdown'].items():
+        print(f"    - {platform.capitalize()}: {data['domains']} dominios × ${data['rpm']} RPM = ${data['revenue']:.2f}")
+
+    print("\nConfiguración Balanceada (5 dominios):")
+    balanced = MultiPlatformAdsConfig.calculate_multi_platform_revenue(
+        'balanced', pageviews_per_domain_month
+    )
+    print(f"  Total Revenue/mes: ${balanced['total_revenue']:.2f}")
+    print(f"  Ganancia neta: ${balanced['total_revenue'] - 20:.2f}/mes")
+    for platform, data in balanced['breakdown'].items():
+        print(f"    - {platform.capitalize()}: {data['domains']} dominios × ${data['rpm']} RPM = ${data['revenue']:.2f}")
+
+    print("\nConfiguración Agresiva (6 dominios) ⭐:")
+    aggressive = MultiPlatformAdsConfig.calculate_multi_platform_revenue(
+        'aggressive', pageviews_per_domain_month
+    )
+    print(f"  Total Revenue/mes: ${aggressive['total_revenue']:.2f}")
+    print(f"  Ganancia neta: ${aggressive['total_revenue'] - 20:.2f}/mes ✅")
+    print(f"  ROI: {((aggressive['total_revenue'] - 20) / 20 * 100):.0f}%")
+    for platform, data in aggressive['breakdown'].items():
+        print(f"    - {platform.capitalize()}: {data['domains']} dominios × ${data['rpm']} RPM = ${data['revenue']:.2f}")
+
+    print("\n" + "="*80)
+    print("🎯 PLATAFORMAS RECOMENDADAS:")
+    print("="*80 + "\n")
+    for platform_name, platform_data in MultiPlatformAdsConfig.PLATFORMS.items():
+        status = "✅ RECOMENDADO" if platform_data['recommended'] else "❌ NO RECOMENDADO"
+        print(f"{platform_name.upper()}: {status}")
+        print(f"  RPM: ${platform_data['rpm_optimized']:.2f} (optimizado) / ${platform_data['rpm_global']:.2f} (global)")
+        print(f"  Riesgo detección: {platform_data['bot_detection_risk']}")
+        print(f"  {platform_data['description']}")
+        print()
+
+    print("="*80)
     print("💡 Para cambiar de nivel, edita ACTIVE_CONFIG en SCALING_CONFIG.py")
-    print("="*70 + "\n")
+    print("📖 Ver MULTI_PLATFORM_ADS_GUIDE.md para detalles completos")
+    print("="*80 + "\n")
