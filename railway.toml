@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "cd backend && pip install --upgrade pip && pip install -r requirements-minimal.txt"
+buildCommand = "cd backend && pip install --upgrade pip && pip install -r requirements-full.txt && playwright install chromium && playwright install-deps chromium"
 
 [deploy]
 startCommand = "cd backend && chmod +x start.sh && ./start.sh"
