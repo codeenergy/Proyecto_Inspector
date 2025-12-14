@@ -11,7 +11,7 @@ webdriver-manager==4.0.1
 
 # HTTP & Requests
 requests==2.31.0
-httpx==0.26.0
+httpx==0.25.2
 aiohttp==3.9.1
 
 # Scheduling & Background Tasks
