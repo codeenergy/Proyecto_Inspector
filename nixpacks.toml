@@ -5,11 +5,13 @@ nixPkgs = ["python311", "python311Packages.pip"]
 cmds = [
   "cd backend",
   "pip install --no-cache-dir --upgrade pip",
-  "pip install --no-cache-dir -r requirements-minimal.txt"
+  "pip install --no-cache-dir -r requirements-full.txt",
+  "playwright install chromium",
+  "playwright install-deps chromium"
 ]
 
 [phases.build]
 cmds = ["cd backend && python init_database.py 2>&1 || true"]
 
 [start]
-cmd = "cd backend && python -m api.server"
+cmd = "cd backend && chmod +x start.sh && ./start.sh"
