@@ -449,26 +449,79 @@ class UserSimulator:
 
     async def _interact_with_ads(self, probability: float) -> bool:
         """
-        Buscar e interactuar con anuncios visibles (Push, Banners, etc.)
+        Buscar e interactuar con anuncios visibles de Monetag
         NOTA: Los pop-unders se manejan en _trigger_monetag_popunder()
+
+        Formatos Monetag soportados:
+        - Multitag (all-in-one)
+        - Push Notifications
+        - In-Page Push (Banner nativo)
+        - Interstitial (pantalla completa)
+        - Vignette Banner
+        - Direct Link
         """
-        # Solo selectores de anuncios VISIBLES en la página
+        # Selectores completos para TODOS los formatos de Monetag
         visible_ad_selectors = [
-            # Push notifications visibles
+            # ========== MULTITAG (All-in-One) ==========
+            'div[data-ad-client*="monetag"]',
+            '[data-ad-format="multitag"]',
+            'script[data-cfasync*="monetag"]',
+
+            # ========== PUSH NOTIFICATIONS ==========
             'div[class*="push-notification"]',
             'div[id*="push-notification"]',
             'div[class*="notification-banner"]',
+            'div[class*="web-push"]',
+            '[data-push-notification]',
 
-            # In-Page Push (banners nativos)
+            # ========== IN-PAGE PUSH (Banner Nativo) ==========
             'div[class*="in-page-push"]',
-            'div[class*="inpage"]',
+            'div[class*="inpage-push"]',
+            'div[id*="inpage"]',
             'div[class*="native-ad"]',
+            'div[class*="native-banner"]',
+            '[data-ad-format="in-page-push"]',
+            '[data-ad-type="inpage"]',
 
-            # Banners genéricos
+            # ========== INTERSTITIAL (Pantalla Completa) ==========
+            'div[class*="interstitial"]',
+            'div[id*="interstitial"]',
+            'div[class*="full-screen-ad"]',
+            'div[class*="overlay-ad"]',
+            'div[role="dialog"][class*="ad"]',
+            '[data-ad-format="interstitial"]',
+            'div[style*="position: fixed"][style*="z-index"][class*="ad"]',
+
+            # ========== VIGNETTE BANNER ==========
+            'div[class*="vignette"]',
+            'div[id*="vignette"]',
+            'div[class*="vignette-banner"]',
+            '[data-ad-format="vignette"]',
+            'div[class*="sticky-banner"]',
+
+            # ========== DIRECT LINK ==========
+            'a[href*="monetag"]',
+            'a[data-ad-type="direct"]',
+            'a[data-monetag="direct-link"]',
+            'a[class*="direct-link"]',
+
+            # ========== BANNER CLÁSICO (300x250, 728x90) ==========
+            'div[class*="banner-300x250"]',
+            'div[class*="banner-728x90"]',
+            'div[id*="banner-ad"]',
+
+            # ========== MONETAG GENERAL ==========
             'iframe[src*="monetag"]',
-            'iframe[src*="propellerads"]',
-            '[class*="ad-container"]',
+            'iframe[data-src*="monetag"]',
+            '[class*="monetag"]',
+            '[id*="monetag"]',
+            'div[data-monetag]',
             '[data-ad-unit]',
+            '[data-ad-slot]',
+
+            # Contenedores genéricos
+            '[class*="ad-container"]',
+            'div.advertisement',
         ]
 
         found_ads = []

@@ -4,12 +4,10 @@ import {
   Play,
   Pause,
   Plus,
-  Monitor,
   Target,
   MousePointer2,
   Eye,
   Activity,
-  Globe,
   Trash2,
   Edit,
   Terminal,
@@ -20,7 +18,6 @@ import {
 } from 'lucide-react';
 import { BotTarget, BotStats } from './types';
 import { CampaignModal } from './components/CampaignModal';
-import { WebExplorer } from './components/WebExplorer';
 import { useAuth } from './AuthContext';
 import { Login } from './components/Login';
 
@@ -41,7 +38,6 @@ function App() {
 
   // All hooks must be declared at the top before any conditional returns
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'targets' | 'explorer'>('dashboard');
   const [targets, setTargets] = useState<BotTarget[]>([]);
   const [stats, setStats] = useState<BotStats>({ total_sessions: 0, total_pageviews: 0, total_ad_clicks: 0 });
   const [schedulerStatus, setSchedulerStatus] = useState({ running: false, active_sessions: 0 });
@@ -162,21 +158,24 @@ function App() {
 
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          <button
-            onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}
-            className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-400 border border-blue-500/30 shadow-lg shadow-blue-500/20' : 'hover:bg-slate-800/50 text-slate-400 hover:text-white'}`}
-          >
+          <div className="w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-400 border border-blue-500/30 shadow-lg shadow-blue-500/20">
             <LayoutDashboard size={20} />
             <span className="font-medium">Bot Control</span>
-          </button>
+          </div>
 
-          <button
-            onClick={() => { setActiveTab('explorer'); setIsMobileMenuOpen(false); }}
-            className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 ${activeTab === 'explorer' ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-400 border border-blue-500/30 shadow-lg shadow-blue-500/20' : 'hover:bg-slate-800/50 text-slate-400 hover:text-white'}`}
-          >
-            <Globe size={20} />
-            <span className="font-medium">Web Explorer</span>
-          </button>
+          <div className="mt-6 px-4 py-3 bg-slate-950/50 rounded-xl border border-slate-700/50">
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Monetag Stats</div>
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between text-slate-400">
+                <span>Popunders:</span>
+                <span className="text-emerald-400 font-medium">{stats.total_ad_clicks}</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Pageviews:</span>
+                <span className="text-blue-400 font-medium">{stats.total_pageviews}</span>
+              </div>
+            </div>
+          </div>
         </nav>
 
         {/* Bot Engine Status */}
@@ -218,8 +217,7 @@ function App() {
               <Menu size={24} />
             </button>
             <h2 className="text-lg md:text-xl font-semibold text-white">
-              {activeTab === 'dashboard' && 'Bot Control Center'}
-              {activeTab === 'explorer' && 'Manual Web Explorer'}
+              Bot Control Center - Monetag Traffic
             </h2>
           </div>
           <div className="flex items-center gap-3">
@@ -239,10 +237,7 @@ function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
-
-          {activeTab === 'dashboard' && (
-            <>
-              {/* Stats Grid */}
+          {/* Stats Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 <div className="group bg-gradient-to-br from-slate-900/80 to-slate-800/50 backdrop-blur-sm border border-slate-700/50 hover:border-blue-500/50 p-6 rounded-2xl transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
                   <div className="flex justify-between items-start">
@@ -430,13 +425,6 @@ function App() {
                   </div>
                 </div>
               </div>
-            </>
-          )}
-
-          {activeTab === 'explorer' && (
-            <WebExplorer />
-          )}
-
         </div>
       </main>
 
