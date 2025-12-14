@@ -31,6 +31,14 @@ class Settings(BaseSettings):
     )
     DB_ECHO: bool = Field(default=False, env="DB_ECHO")
 
+    @validator("DATABASE_URL", pre=True)
+    def fix_database_url_typo(cls, v):
+        """Auto-fix common typo: qlite -> sqlite"""
+        if isinstance(v, str) and v.startswith("qlite://"):
+            # Fix typo: qlite -> sqlite
+            return v.replace("qlite://", "sqlite://", 1)
+        return v
+
     # Redis (para cache y Celery)
     REDIS_URL: str = Field(
         default="redis://localhost:6379/0",
