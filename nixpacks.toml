@@ -1,16 +1,16 @@
 [phases.setup]
-nixPkgs = ["python311", "python311Packages.pip"]
+nixPkgs = ["python311"]
 
 [phases.install]
 cmds = [
-  "cd backend",
-  "pip install --no-cache-dir -r requirements-full.txt",
-  "playwright install chromium",
-  "playwright install-deps chromium"
+  "python -m venv /opt/venv",
+  ". /opt/venv/bin/activate && cd backend && pip install -r requirements-full.txt",
+  ". /opt/venv/bin/activate && playwright install chromium",
+  ". /opt/venv/bin/activate && playwright install-deps chromium"
 ]
 
 [phases.build]
-cmds = ["cd backend && python init_database.py 2>&1 || true"]
+cmds = [". /opt/venv/bin/activate && cd backend && python init_database.py 2>&1 || true"]
 
 [start]
-cmd = "cd backend && chmod +x start.sh && ./start.sh"
+cmd = ". /opt/venv/bin/activate && cd backend && chmod +x start.sh && ./start.sh"
