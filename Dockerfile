@@ -29,9 +29,6 @@ RUN playwright install chromium
 # Copiar el resto del código
 COPY . .
 
-# Hacer ejecutable el script de inicio
-RUN chmod +x backend/start.sh
-
 # Inicializar base de datos (permite fallar)
 RUN cd backend && python init_database.py || true
 
@@ -41,5 +38,5 @@ WORKDIR /app/backend
 # Exponer puerto (Railway usa la variable $PORT)
 EXPOSE 8080
 
-# Comando de inicio
-CMD ["./start.sh"]
+# Comando de inicio - ejecutar uvicorn directamente
+CMD ["python", "-m", "uvicorn", "api.server:app", "--host", "0.0.0.0", "--port", "8080"]
