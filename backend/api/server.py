@@ -20,6 +20,9 @@ from config import settings
 from modules.scheduler_service import get_scheduler
 from init_database import BotTarget, BotSession, init_database
 
+# Setup logger BEFORE optional imports
+logger = logging.getLogger(__name__)
+
 # Optional imports - gracefully handle if dependencies are missing
 try:
     from modules.ai_analyzer import analyze_campaign_error, generate_dashboard_insight
