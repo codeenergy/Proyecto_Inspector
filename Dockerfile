@@ -38,5 +38,5 @@ WORKDIR /app/backend
 # Exponer puerto (Railway usa la variable $PORT)
 EXPOSE 8080
 
-# Comando de inicio - ejecutar uvicorn directamente
-CMD ["python", "-m", "uvicorn", "api.server:app", "--host", "0.0.0.0", "--port", "8080"]
+# Comando de inicio - usar script que respeta PORT env var
+CMD ["python", "railway-start.py"]
