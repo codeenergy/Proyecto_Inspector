@@ -49,6 +49,8 @@ class BotTrafficScheduler:
         self.running_sessions: Dict[str, bool] = {}
         self.failed_sessions: Dict[str, int] = {}  # Track retry counts
         self.max_retries = 3
+        self.max_concurrent_sessions = 1  # LIMIT: Only 1 concurrent Playwright session (Railway memory limit)
+        self.active_session_count = 0  # Track active sessions globally
         self.stats = {
             "total_sessions": 0,
             "total_pageviews": 0,
@@ -140,15 +142,25 @@ class BotTrafficScheduler:
         """Verificar targets y lanzar nuevas sesiones si es necesario"""
         targets = self.load_targets()
         logger.info(f"Targets activos encontrados: {len(targets)}")
-        
+
+        # LIMIT: Check global concurrent session limit (Railway memory constraint)
+        if self.active_session_count >= self.max_concurrent_sessions:
+            logger.debug(f"⏸️ Max concurrent sessions ({self.max_concurrent_sessions}) reached, waiting...")
+            return
+
         for target in targets:
             target_id = str(target["id"])
-            
+
             # Si ya hay una sesión corriendo para este target, saltar
             if self.running_sessions.get(target_id, False):
                 logger.debug(f"Sesión ya activa para target {target_id}, saltando.")
                 continue
-                
+
+            # Check global limit again before launching
+            if self.active_session_count >= self.max_concurrent_sessions:
+                logger.debug(f"⏸️ Concurrent limit reached, deferring remaining targets")
+                break
+
             # Lanzar nueva sesión en background
             self.scheduler.add_job(
                 self._run_session_job,
@@ -156,8 +168,10 @@ class BotTrafficScheduler:
                 args=[target],
                 id=f"session_{target_id}_{int(datetime.now().timestamp())}",
                 name=f"Sesión {target['url']}",
-                max_instances=5
+                max_instances=1  # LIMIT: Only 1 instance per target
             )
+
+            self.active_session_count += 1  # Increment counter
 
     async def _run_session_job(self, target_config: Dict):
         """Ejecutar una sesión de tráfico con retry logic y error recovery"""
@@ -166,6 +180,10 @@ class BotTrafficScheduler:
 
         start_time = datetime.utcnow()
         retry_count = self.failed_sessions.get(target_id, 0)
+
+        # Ensure we have active session slot
+        if self.active_session_count <= 0:
+            self.active_session_count = 1  # Safety check
 
         try:
             logger.info(f"▶️ Iniciando sesión para {target_config['url']} (intento {retry_count + 1}/{self.max_retries})")
@@ -279,6 +297,10 @@ class BotTrafficScheduler:
 
         finally:
             self.running_sessions[target_id] = False
+            # Decrement active session counter to allow next session
+            if self.active_session_count > 0:
+                self.active_session_count -= 1
+            logger.debug(f"Active sessions: {self.active_session_count}/{self.max_concurrent_sessions}")
 
     def stop(self):
         self.scheduler.shutdown(wait=False)
