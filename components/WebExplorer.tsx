@@ -33,6 +33,9 @@ export function WebExplorer() {
 
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001';
+
+      console.log('[WebExplorer] Sending request to:', `${API_BASE}/explore/website`);
+
       const response = await fetch(`${API_BASE}/explore/website`, {
         method: 'POST',
         headers: {
@@ -46,15 +49,25 @@ export function WebExplorer() {
         }),
       });
 
+      console.log('[WebExplorer] Response status:', response.status);
+
       const data = await response.json();
+      console.log('[WebExplorer] Response data:', data);
 
       if (data.status === 'success') {
         setResult(data.data);
       } else {
-        setError(data.message || 'Error en la exploración');
+        // Check if it's a "not available" error
+        const errorMsg = data.message || 'Error en la exploración';
+        if (errorMsg.includes('not available') || errorMsg.includes('Web explorer')) {
+          setError('⚠️ Web Explorer no está disponible en producción. Esta funcionalidad requiere Playwright que solo está disponible localmente.');
+        } else {
+          setError(errorMsg);
+        }
       }
     } catch (err) {
-      setError('Error conectando con el servidor. Verifica que el backend esté disponible.');
+      console.error('[WebExplorer] Error:', err);
+      setError('❌ Error conectando con el servidor. El Web Explorer puede no estar disponible en esta instancia.');
     } finally {
       setIsExploring(false);
     }
