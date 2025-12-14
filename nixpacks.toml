@@ -4,7 +4,6 @@ nixPkgs = ["python311", "python311Packages.pip"]
 [phases.install]
 cmds = [
   "cd backend",
-  "pip install --no-cache-dir --upgrade pip",
   "pip install --no-cache-dir -r requirements-full.txt",
   "playwright install chromium",
   "playwright install-deps chromium"
