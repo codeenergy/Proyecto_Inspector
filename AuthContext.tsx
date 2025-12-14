@@ -22,23 +22,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = (username: string, password: string): boolean => {
         if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-            // Set localStorage FIRST to ensure it's ready before state update
+            // Set localStorage FIRST
             localStorage.setItem(AUTH_KEY, 'true');
 
             // Use flushSync to ensure state update happens synchronously
-            // This prevents React 19's batching from delaying the authentication state update
             flushSync(() => {
                 setIsAuthenticated(true);
             });
 
-            // Force a microtask to ensure localStorage is flushed
-            Promise.resolve().then(() => {
-                // Verify auth state is set correctly
-                const authStatus = localStorage.getItem(AUTH_KEY);
-                if (authStatus !== 'true') {
-                    console.error('Auth state mismatch after login');
-                }
-            });
+            // Force a page reload to ensure clean state (fixes React 19 routing issues)
+            setTimeout(() => {
+                window.location.href = window.location.origin;
+            }, 100);
 
             return true;
         }
@@ -46,8 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const logout = () => {
-        setIsAuthenticated(false);
         localStorage.removeItem(AUTH_KEY);
+        setIsAuthenticated(false);
+        // Force reload to ensure clean logout
+        window.location.href = window.location.origin;
     };
 
     return (
