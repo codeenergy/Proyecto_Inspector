@@ -316,12 +316,15 @@ class UserSimulator:
                 
                 # Simular lectura y scroll
                 await self.simulator.human_scroll(self.page, target="bottom", steps=random.randint(5, 12))
-                await self.simulator.simulate_reading(self.page, duration_seconds=random.randint(5, 15))
-                
+                await self.simulator.simulate_reading(self.page, duration_seconds=random.randint(3, 8))
+
                 # Scroll arriba un poco
                 await self.simulator.human_scroll(self.page, target="middle")
 
-                # Interactuar con anuncios
+                # ⭐ MONETAG STRATEGY: Click en la página para activar pop-unders
+                await self._trigger_monetag_popunder(ad_click_prob)
+
+                # Interactuar con anuncios visibles (push, banners, etc.)
                 clicked_ad = await self._interact_with_ads(ad_click_prob)
                 
                 if clicked_ad:
@@ -356,161 +359,168 @@ class UserSimulator:
 
         return result
 
-    async def _interact_with_ads(self, probability: float) -> bool:
-        """Buscar e interactuar con anuncios - Optimizado para Monetag"""
-        # Selectores específicos para Monetag y otros ad networks
-        ad_selectors = [
-            # Google Ads
-            'iframe[src*="googleads"]',
-            'iframe[id*="google_ads"]',
-            '.adsbygoogle',
-            'div[id*="div-gpt-ad"]',
-            'a[href*="doubleclick"]',
-            '[aria-label="Advertisement"]',
-
-            # ========== MONETAG ESPECÍFICO ==========
-            # Push Notifications (Monetag)
-            'div[id*="push-notification"]',
-            'div[class*="push-notification"]',
-            '[id*="monetag-push"]',
-            '[class*="monetag-push"]',
-            'div[data-monetag-type="push"]',
-
-            # Direct Link (Monetag) - Links que abren en nueva pestaña
-            'a[target="_blank"][href*="monetag"]',
-            'a[target="_blank"][href*="propellerads"]',
-            'a[data-monetag="direct-link"]',
-
-            # In-Page Push (Monetag) - Notificaciones dentro de la página
-            'div[class*="in-page-push"]',
-            'div[id*="in-page-push"]',
-            '[class*="inpage-push"]',
-            '[id*="inpage"]',
-            'div[class*="native-ad"]',
-            'div[data-ad-format="in-page-push"]',
-
-            # Vignette Banner (Monetag) - Anuncios de página completa
-            'div[class*="vignette"]',
-            'div[id*="vignette"]',
-            'div[class*="interstitial"]',
-            'div[id*="interstitial"]',
-            'div[style*="position: fixed"][style*="z-index"]',
-            'div[data-ad-format="vignette"]',
-
-            # Monetag General
-            'iframe[src*="monetag"]',
-            'iframe[data-src*="monetag"]',
-            '[class*="monetag"]',
-            '[id*="monetag"]',
-            'script[src*="monetag"]',
-            '[href*="monetag"]',
-            'div[data-monetag]',
-
-            # PropellerAds (similar a Monetag)
-            '[class*="propeller"]',
-            '[id*="propeller"]',
-            'iframe[src*="propellerads"]',
-
-            # Genéricos de alto CPM
-            'div.ad-container',
-            'div[class*="popup"]',
-            'div[class*="overlay"]',
-            'div[style*="z-index: 2147483647"]', # Max Z-Index
-            'div[class*="pusher"]',
-            'div[class*="notification-banner"]',
-            'div[role="dialog"]', # Popups modales
-            '[data-ad-unit]',
-            '[data-ad-slot]'
-        ]
-        
-        found_ads = []
-        for selector in ad_selectors:
-            elements = await self.page.query_selector_all(selector)
-            found_ads.extend(elements)
-            
-        if not found_ads:
+    async def _trigger_monetag_popunder(self, probability: float) -> bool:
+        """
+        Activar pop-unders de Monetag mediante clicks en elementos de la página
+        Los pop-unders de Monetag se activan con CUALQUIER click en la página
+        """
+        if random.random() > probability:
             return False
 
-        logger.info(f"👀 Detectados {len(found_ads)} posibles espacios publicitarios")
-        
-        # Hover sobre algunos anuncios (viewability)
-        for ad in found_ads[:3]:
+        try:
+            # Selectores de elementos seguros para clickear (no links externos)
+            safe_click_targets = [
+                'body',
+                'main',
+                'article',
+                'div.content',
+                'div.container',
+                'section',
+                'p',
+                'h1', 'h2', 'h3',
+                'img',
+                'div[class*="hero"]',
+                'div[class*="banner"]',
+                'div[class*="card"]'
+            ]
+
+            # Buscar elemento clickeable
+            for selector in safe_click_targets:
+                try:
+                    elements = await self.page.query_selector_all(selector)
+                    if elements and len(elements) > 0:
+                        # Elegir elemento aleatorio
+                        target = random.choice(elements[:5])  # Solo primeros 5 para eficiencia
+
+                        # Scroll al elemento
+                        await target.scroll_into_view_if_needed()
+                        await asyncio.sleep(random.uniform(0.3, 0.8))
+
+                        # Click que activará el pop-under de Monetag
+                        await target.click()
+                        logger.info(f"💰 Click realizado en '{selector}' - Pop-under de Monetag activado")
+
+                        # Esperar a que se abra el pop-under
+                        await asyncio.sleep(random.uniform(1, 2))
+
+                        # Detectar y manejar pop-under (nueva pestaña/ventana)
+                        pages = self.simulator.context.pages
+                        if len(pages) > 1:
+                            logger.info(f"✅ Pop-under detectado! ({len(pages) - 1} ventanas nuevas)")
+
+                            # IMPORTANTE: Cerrar pop-under después de tiempo realista
+                            # Esto maximiza revenue (el anunciante paga por la apertura)
+                            for popup_page in pages[1:]:
+                                try:
+                                    # Esperar tiempo realista (Monetag cuenta viewability)
+                                    wait_time = random.uniform(8, 15)
+                                    logger.info(f"⏱️ Pop-under abierto durante {wait_time:.1f}s (maximizando revenue)")
+                                    await asyncio.sleep(wait_time)
+
+                                    # Opcional: Scroll en el pop-under para aumentar engagement
+                                    try:
+                                        await popup_page.evaluate("window.scrollBy(0, 300)")
+                                        await asyncio.sleep(random.uniform(1, 3))
+                                    except:
+                                        pass
+
+                                    await popup_page.close()
+                                    logger.info("🔒 Pop-under cerrado")
+                                except Exception as e:
+                                    logger.error(f"Error manejando pop-under: {e}")
+
+                            # Registrar click exitoso
+                            self.session_data["ads_clicked"] += 1
+                            return True
+                        else:
+                            logger.warning("⚠️ Click realizado pero no se detectó pop-under (posible bloqueador)")
+
+                        return True
+
+                except Exception as e:
+                    continue  # Probar siguiente selector
+
+            logger.warning("⚠️ No se encontraron elementos seguros para activar pop-under")
+            return False
+
+        except Exception as e:
+            logger.error(f"❌ Error activando pop-under de Monetag: {e}")
+            return False
+
+    async def _interact_with_ads(self, probability: float) -> bool:
+        """
+        Buscar e interactuar con anuncios visibles (Push, Banners, etc.)
+        NOTA: Los pop-unders se manejan en _trigger_monetag_popunder()
+        """
+        # Solo selectores de anuncios VISIBLES en la página
+        visible_ad_selectors = [
+            # Push notifications visibles
+            'div[class*="push-notification"]',
+            'div[id*="push-notification"]',
+            'div[class*="notification-banner"]',
+
+            # In-Page Push (banners nativos)
+            'div[class*="in-page-push"]',
+            'div[class*="inpage"]',
+            'div[class*="native-ad"]',
+
+            # Banners genéricos
+            'iframe[src*="monetag"]',
+            'iframe[src*="propellerads"]',
+            '[class*="ad-container"]',
+            '[data-ad-unit]',
+        ]
+
+        found_ads = []
+        for selector in visible_ad_selectors:
+            try:
+                elements = await self.page.query_selector_all(selector)
+                found_ads.extend(elements)
+            except:
+                continue
+
+        if not found_ads:
+            logger.debug("📊 No se encontraron anuncios visibles (normal con Monetag pop-unders)")
+            return False
+
+        logger.info(f"👀 Detectados {len(found_ads)} anuncios visibles")
+
+        # Hover sobre anuncios para viewability
+        for ad in found_ads[:2]:
             try:
                 await ad.scroll_into_view_if_needed()
                 await ad.hover()
-                await asyncio.sleep(random.random() * 2)
-            except: pass
+                await asyncio.sleep(random.uniform(1, 2))
+            except:
+                pass
 
-        # Decidir si clickear (aumentado para Monetag)
-        if random.random() < probability:
+        # Clickear anuncio visible si probabilidad lo permite
+        if random.random() < probability and len(found_ads) > 0:
             target_ad = random.choice(found_ads)
             try:
-                logger.info("🖱️ Intentando click en anuncio Monetag...")
-
-                # Detectar tipo de anuncio Monetag
-                ad_class = await target_ad.get_attribute('class') or ''
-                ad_id = await target_ad.get_attribute('id') or ''
-                ad_type = "unknown"
-
-                if 'push' in ad_class.lower() or 'push' in ad_id.lower():
-                    ad_type = "Push Notification"
-                elif 'vignette' in ad_class.lower() or 'vignette' in ad_id.lower():
-                    ad_type = "Vignette Banner"
-                elif 'in-page' in ad_class.lower() or 'inpage' in ad_id.lower():
-                    ad_type = "In-Page Push"
-                elif 'direct' in ad_class.lower() or await target_ad.get_attribute('target') == '_blank':
-                    ad_type = "Direct Link"
-
-                logger.info(f"💰 Detectado anuncio tipo: {ad_type}")
-
-                # Click en el anuncio (Ctrl+Click para abrir en nueva pestaña)
+                logger.info("🖱️ Click en anuncio visible...")
                 await target_ad.scroll_into_view_if_needed()
-                await asyncio.sleep(random.uniform(0.5, 1.5))
-                await target_ad.click(modifiers=["Control"])
+                await asyncio.sleep(random.uniform(0.5, 1))
+                await target_ad.click()
 
-                # Registrar click exitoso
                 self.session_data["ads_clicked"] += 1
-                logger.info(f"✅ Click exitoso en anuncio {ad_type}")
+                logger.info("✅ Click exitoso en anuncio visible")
 
-                # Esperar a que se abra la nueva pestaña/popup (tiempo realista)
-                await asyncio.sleep(random.uniform(5, 10))
-
-                # Cerrar pestañas extra (Monetag a veces abre múltiples)
+                # Manejar ventanas emergentes
+                await asyncio.sleep(random.uniform(3, 5))
                 pages = self.simulator.context.pages
                 if len(pages) > 1:
-                    logger.info(f"🔄 Cerrando {len(pages) - 1} pestañas de anuncios...")
-                    for p in pages[1:]:
+                    for popup in pages[1:]:
                         try:
-                            # AUMENTADO: Permanece 15-30 segundos en cada anuncio como usuario real
-                            # Esto MAXIMIZA el revenue (viewability + engagement)
-                            wait_time = random.uniform(15, 30)
-                            logger.info(f"⏱️ Permaneciendo {wait_time:.1f}s en anuncio (aumentando revenue)")
-                            await asyncio.sleep(wait_time)
-
-                            # Simular scroll en la página del anuncio (engagement realista)
-                            try:
-                                await p.evaluate("window.scrollBy(0, window.innerHeight / 2)")
-                                await asyncio.sleep(random.uniform(2, 5))
-                                await p.evaluate("window.scrollBy(0, -window.innerHeight / 4)")
-                            except:
-                                pass
-
-                            await p.close()
+                            await asyncio.sleep(random.uniform(8, 12))
+                            await popup.close()
                         except:
                             pass
 
                 return True
 
             except Exception as e:
-                logger.error(f"❌ Falló click en anuncio: {e}")
-                # Intentar click simple si Ctrl+Click falló
-                try:
-                    await target_ad.click()
-                    self.session_data["ads_clicked"] += 1
-                    await asyncio.sleep(3)
-                    return True
-                except:
-                    pass
+                logger.debug(f"Click en anuncio visible falló: {e}")
 
         return False
 
