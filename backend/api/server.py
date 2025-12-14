@@ -192,6 +192,8 @@ async def get_targets(db: Session = Depends(get_db)):
 async def create_target(target: BotTargetCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Crear nuevo target"""
     try:
+        logger.info(f"Creating new target: {target.url}")
+
         new_target = BotTarget(
             url=target.url,
             target_pageviews=target.target_pageviews,
@@ -202,7 +204,9 @@ async def create_target(target: BotTargetCreate, background_tasks: BackgroundTas
         db.add(new_target)
         db.commit()
         db.refresh(new_target)
-        
+
+        logger.info(f"Target created successfully with ID: {new_target.id}")
+
         # Reload scheduler in background to prevent blocking/errors affecting response
         background_tasks.add_task(reload_scheduler_safely)
 
@@ -211,8 +215,9 @@ async def create_target(target: BotTargetCreate, background_tasks: BackgroundTas
             "message": "Target creado correctamente"
         }
     except Exception as e:
-        logger.exception("Error creando target")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception(f"Error creating target: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.delete("/targets/{target_id}", response_model=StatusResponse)
 async def delete_target(target_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -363,11 +368,13 @@ if __name__ == "__main__":
     import uvicorn
     import os
 
-    # Railway V2 uses PORT=8080, fallback to settings
-    port = int(os.getenv("PORT", os.getenv("RAILWAY_PORT", "8080")))
+    # Use API_PORT from settings first, then Railway PORT, then fallback to 8001
+    port = int(os.getenv("PORT", os.getenv("RAILWAY_PORT", str(settings.API_PORT))))
     host = os.getenv("HOST", settings.API_HOST)
 
     logger.info(f"🚀 Starting server on {host}:{port}")
+    logger.info(f"📡 CORS Origins: {settings.CORS_ORIGINS}")
+    logger.info(f"🗄️  Database: {settings.DATABASE_URL}")
 
     uvicorn.run(
         "server:app",

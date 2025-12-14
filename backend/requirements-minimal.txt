@@ -1,0 +1,13 @@
+# MINIMAL REQUIREMENTS FOR RAILWAY DEPLOYMENT
+# API-only version without heavy dependencies (playwright, AI, etc.)
+
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+sqlalchemy==2.0.25
+APScheduler==3.10.4
+python-dotenv==1.0.0
+python-multipart==0.0.6
+pytz==2023.3
+python-json-logger==2.0.7

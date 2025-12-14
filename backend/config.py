@@ -151,8 +151,10 @@ class Settings(BaseSettings):
     @validator("GEMINI_API_KEY")
     def validate_gemini_key(cls, v, values):
         """Validar que Gemini API key esté presente si AI está habilitado"""
+        # Solo validar en development - en production puede estar vacío si AI está deshabilitado
         if values.get("ENABLE_AI_ANALYSIS") and not v:
-            raise ValueError("GEMINI_API_KEY es requerido cuando ENABLE_AI_ANALYSIS=True")
+            if values.get("ENVIRONMENT") == "development":
+                raise ValueError("GEMINI_API_KEY es requerido cuando ENABLE_AI_ANALYSIS=True")
         return v
 
     class Config:

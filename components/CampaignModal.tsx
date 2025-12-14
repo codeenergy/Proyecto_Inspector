@@ -45,32 +45,45 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ isOpen, onClose, o
     };
 
     try {
-      let res;
-      if (initialData) {
-        // Edit Mode
-        res = await fetch(`${API_BASE}/targets/${initialData.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(targetData)
-        });
-      } else {
-        // Create Mode
-        res = await fetch(`${API_BASE}/targets`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(targetData)
-        });
-      }
+      const endpoint = initialData
+        ? `${API_BASE}/targets/${initialData.id}`
+        : `${API_BASE}/targets`;
+
+      const method = initialData ? 'PUT' : 'POST';
+
+      console.log(`[CampaignModal] ${method} request to: ${endpoint}`);
+      console.log('[CampaignModal] Target data:', targetData);
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(targetData)
+      });
+
+      console.log('[CampaignModal] Response status:', res.status);
 
       if (res.ok) {
+        const responseData = await res.json();
+        console.log('[CampaignModal] Success:', responseData);
         onSave(targetData);
         onClose();
       } else {
-        alert("Error saving target");
+        const errorText = await res.text();
+        console.error('[CampaignModal] Server error:', res.status, errorText);
+        alert(`Error saving target: ${res.status} - ${errorText || 'Server error'}`);
       }
     } catch (error) {
-      console.error("Error:", error);
-      alert("Connection error");
+      console.error('[CampaignModal] Connection error:', error);
+
+      // More detailed error message
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        alert(`Cannot connect to backend at ${API_BASE}\n\nMake sure the backend server is running.\n\nError: ${error.message}`);
+      } else {
+        alert(`Connection error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     } finally {
       setIsSubmitting(false);
     }

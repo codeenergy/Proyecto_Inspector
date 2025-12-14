@@ -2,20 +2,11 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "nixpacksPlan": {
-      "phases": {
-        "install": {
-          "cmds": ["cd backend && pip install -r requirements-minimal.txt"]
-        },
-        "setup": {
-          "cmds": ["cd backend && python init_database.py || true"]
-        }
-      }
-    }
+    "buildCommand": "cd backend && pip install --upgrade pip && pip install -r requirements-minimal.txt"
   },
   "deploy": {
-    "startCommand": "cd backend && python -m api.server",
+    "startCommand": "cd backend && chmod +x start.sh && ./start.sh",
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
+    "restartPolicyMaxRetries": 3
   }
 }

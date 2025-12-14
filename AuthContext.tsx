@@ -22,12 +22,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = (username: string, password: string): boolean => {
         if (username === VALID_USERNAME && password === VALID_PASSWORD) {
+            // Set localStorage FIRST to ensure it's ready before state update
+            localStorage.setItem(AUTH_KEY, 'true');
+
             // Use flushSync to ensure state update happens synchronously
             // This prevents React 19's batching from delaying the authentication state update
             flushSync(() => {
                 setIsAuthenticated(true);
             });
-            localStorage.setItem(AUTH_KEY, 'true');
+
+            // Force a microtask to ensure localStorage is flushed
+            Promise.resolve().then(() => {
+                // Verify auth state is set correctly
+                const authStatus = localStorage.getItem(AUTH_KEY);
+                if (authStatus !== 'true') {
+                    console.error('Auth state mismatch after login');
+                }
+            });
+
             return true;
         }
         return false;

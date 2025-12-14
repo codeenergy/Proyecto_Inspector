@@ -15,16 +15,20 @@ export function Login() {
         setIsLoading(true);
 
         // Simulate network delay for better UX
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await new Promise(resolve => setTimeout(resolve, 500));
 
+        // Login will use flushSync internally to update state immediately
         const success = login(username, password);
 
         if (!success) {
             setError('Invalid credentials. Please try again.');
             setIsLoading(false);
+        } else {
+            // Login successful - keep loading state to prevent flicker
+            // Component will unmount immediately due to flushSync in login()
+            // Wait a tiny bit to ensure state propagation
+            await new Promise(resolve => setTimeout(resolve, 50));
         }
-        // Don't reset loading state if successful - component will unmount anyway
-        // This prevents state update race conditions with React 19's batching
     };
 
     return (
