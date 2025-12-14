@@ -21,10 +21,10 @@ export function Login() {
 
         if (!success) {
             setError('Invalid credentials. Please try again.');
+            setIsLoading(false);
         }
-
-        // Always reset loading state
-        setIsLoading(false);
+        // Don't reset loading state if successful - component will unmount anyway
+        // This prevents state update race conditions with React 19's batching
     };
 
     return (

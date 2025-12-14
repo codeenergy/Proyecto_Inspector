@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 
 interface AuthContextType {
     isAuthenticated: boolean;
@@ -21,7 +22,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = (username: string, password: string): boolean => {
         if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-            setIsAuthenticated(true);
+            // Use flushSync to ensure state update happens synchronously
+            // This prevents React 19's batching from delaying the authentication state update
+            flushSync(() => {
+                setIsAuthenticated(true);
+            });
             localStorage.setItem(AUTH_KEY, 'true');
             return true;
         }
