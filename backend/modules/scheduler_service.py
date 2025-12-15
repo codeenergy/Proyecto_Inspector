@@ -49,7 +49,7 @@ class BotTrafficScheduler:
         self.running_sessions: Dict[str, bool] = {}
         self.failed_sessions: Dict[str, int] = {}  # Track retry counts
         self.max_retries = 3
-        self.max_concurrent_sessions = 1  # LIMIT: Only 1 concurrent Playwright session (Railway memory limit)
+        self.max_concurrent_sessions = 6  # Railway Pro: 6 sesiones concurrentes (8GB RAM)
         self.active_session_count = 0  # Track active sessions globally
         self.stats = {
             "total_sessions": 0,

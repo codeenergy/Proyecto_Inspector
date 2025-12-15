@@ -519,6 +519,12 @@ class UserSimulator:
             '[data-ad-unit]',
             '[data-ad-slot]',
 
+            # ========== GIZOKRAIJAW (Compatible con Monetag) ==========
+            'script[src*="gizokraijaw"]',
+            'script[data-zone]',
+            '[src*="vignette.min.js"]',
+            'div[data-zone]',
+
             # Contenedores genéricos
             '[class*="ad-container"]',
             'div.advertisement',

@@ -102,13 +102,16 @@ class ScalingConfig:
 # =============================================================================
 
 # ⚠️ CAMBIA ESTA LÍNEA PARA ESCALAR:
-ACTIVE_CONFIG = ScalingConfig.HOBBY_STABLE  # Actual: 1 sesión, estable
+ACTIVE_CONFIG = ScalingConfig.PRO_5K  # Railway Pro: 6 sesiones, $5K/mes ⭐
 
-# Para escalar a 2 sesiones (gratis):
+# Para volver a Hobby:
+# ACTIVE_CONFIG = ScalingConfig.HOBBY_STABLE
+
+# Para optimizar Hobby (2 sesiones):
 # ACTIVE_CONFIG = ScalingConfig.HOBBY_OPTIMIZED
 
-# Para escalar a Railway Pro ($5K/mes):
-# ACTIVE_CONFIG = ScalingConfig.PRO_5K
+# Para configuración conservadora Pro:
+# ACTIVE_CONFIG = ScalingConfig.PRO_CONSERVATIVE
 
 # Para máximo performance (Hetzner VPS):
 # ACTIVE_CONFIG = ScalingConfig.VPS_MAX
