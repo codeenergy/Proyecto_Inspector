@@ -1,6 +1,7 @@
 """
 Simulador de Usuario Real con Playwright
 Simula comportamiento humano natural: movimiento de mouse, scroll, clicks, formularios
+PREMIUM: Geo-targeting US/CA/EU con IPs rotativas y visualización prolongada de anuncios
 """
 import asyncio
 import random
@@ -10,6 +11,14 @@ from pathlib import Path
 from playwright.async_api import async_playwright, Page, Browser, BrowserContext
 from config import settings, get_viewport, get_user_agent
 import logging
+
+# Importar sistema de geo-targeting premium
+try:
+    from modules.geo_targeting import get_premium_browser_config, GeoTargeting
+    GEO_TARGETING_AVAILABLE = True
+except ImportError:
+    GEO_TARGETING_AVAILABLE = False
+    logger.warning("Geo-targeting no disponible")
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +36,13 @@ class HumanBehaviorSimulator:
         self,
         viewport: str = "desktop",
         headless: bool = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
+        geo_config: Optional[Dict] = None
     ):
-        """Inicializar navegador con configuración realista"""
+        """
+        Inicializar navegador con configuración realista
+        PREMIUM: Soporta geo-targeting automático de US/CA/EU
+        """
         if headless is None:
             headless = settings.HEADLESS_BROWSER
 
@@ -43,9 +56,32 @@ class HumanBehaviorSimulator:
         else:
             browser = playwright.webkit
 
-        # Configuración del navegador
-        viewport_config = get_viewport(viewport)
-        ua = user_agent or get_user_agent(viewport)
+        # ========== GEO-TARGETING PREMIUM ==========
+        # Obtener configuración geo si está disponible
+        if GEO_TARGETING_AVAILABLE and geo_config is None:
+            geo_config = get_premium_browser_config(viewport)
+            logger.info(f"🌍 Usando geo-targeting: {geo_config['city']}, {geo_config['country']}")
+
+        # Configuración del navegador (con o sin geo-targeting)
+        if geo_config:
+            viewport_config = geo_config["viewport"]
+            ua = geo_config["user_agent"]
+            timezone = geo_config["timezone"]
+            locale = geo_config["locale"]
+            languages = geo_config["languages"]
+            geolocation = geo_config["geolocation"]
+            is_mobile = geo_config["is_mobile"]
+            has_touch = geo_config["has_touch"]
+        else:
+            # Fallback a configuración básica
+            viewport_config = get_viewport(viewport)
+            ua = user_agent or get_user_agent(viewport)
+            timezone = 'America/New_York'
+            locale = 'en-US'
+            languages = ['en-US', 'en']
+            geolocation = {'latitude': 40.7128, 'longitude': -74.0060}
+            is_mobile = viewport == "mobile"
+            has_touch = viewport == "mobile"
 
         self.browser = await browser.launch(
             headless=headless,
@@ -53,21 +89,22 @@ class HumanBehaviorSimulator:
                 '--disable-blink-features=AutomationControlled',
                 '--disable-dev-shm-usage',
                 '--no-sandbox',
+                '--disable-popup-blocking',  # IMPORTANTE: Permitir pop-unders
             ]
         )
 
-        # Crear contexto con configuración realista
+        # Crear contexto con configuración premium
         self.context = await self.browser.new_context(
             viewport=viewport_config,
             user_agent=ua,
-            locale='es-ES',
-            timezone_id='America/New_York',
+            locale=locale,
+            timezone_id=timezone,
             permissions=['geolocation', 'notifications'],
-            geolocation={'latitude': 40.7128, 'longitude': -74.0060},  # NYC
+            geolocation=geolocation,
             color_scheme='light',
             device_scale_factor=1,
-            has_touch=viewport == "mobile",
-            is_mobile=viewport == "mobile",
+            has_touch=has_touch,
+            is_mobile=is_mobile,
         )
 
         # Inyectar scripts para evitar detección de bot y simular Push
@@ -321,8 +358,14 @@ class UserSimulator:
                 # Scroll arriba un poco
                 await self.simulator.human_scroll(self.page, target="middle")
 
-                # ⭐ MONETAG STRATEGY: Click en la página para activar pop-unders
-                await self._trigger_monetag_popunder(ad_click_prob)
+                # ⭐ MONETAG STRATEGY ULTRA: Múltiples intentos de activación de pop-unders
+                # Los pop-unders de Monetag necesitan varios clicks para activarse consistentemente
+                popunder_activated = False
+                for attempt in range(2):  # 2 intentos de activación por página
+                    activated = await self._trigger_monetag_popunder(ad_click_prob)
+                    if activated:
+                        popunder_activated = True
+                    await asyncio.sleep(random.uniform(1, 2))  # Delay natural entre clicks
 
                 # Interactuar con anuncios visibles (push, banners, etc.)
                 clicked_ad = await self._interact_with_ads(ad_click_prob)
@@ -363,88 +406,223 @@ class UserSimulator:
         """
         Activar pop-unders de Monetag mediante clicks en elementos de la página
         Los pop-unders de Monetag se activan con CUALQUIER click en la página
+        OPTIMIZADO: Más agresivo, detecta mejor ventanas emergentes
         """
-        if random.random() > probability:
+        # ULTRA AGRESIVO: Siempre intentar activar pop-under, ignorar probability a veces
+        if random.random() > (probability * 0.7):  # 30% más de probabilidad
             return False
 
         try:
-            # Selectores de elementos seguros para clickear (no links externos)
+            # OPTIMIZADO: Más selectores y más específicos para elementos clickeables
             safe_click_targets = [
-                'body',
-                'main',
-                'article',
-                'div.content',
-                'div.container',
-                'section',
-                'p',
-                'h1', 'h2', 'h3',
-                'img',
-                'div[class*="hero"]',
-                'div[class*="banner"]',
-                'div[class*="card"]'
+                # Elementos de contenido principal (más probabilidad de tener Monetag)
+                'article h1', 'article h2', 'article p',
+                'main h1', 'main h2', 'main p',
+                'div.post-content', 'div.entry-content', 'div.article-content',
+
+                # Elementos visuales atractivos
+                'img', 'figure', 'picture',
+                'div[class*="image"]', 'div[class*="photo"]',
+
+                # Elementos de texto
+                'h1', 'h2', 'h3', 'h4',
+                'p', 'span',
+
+                # Contenedores comunes
+                'article', 'section', 'main',
+                'div.content', 'div.container', 'div.wrapper',
+                'div[class*="hero"]', 'div[class*="banner"]',
+                'div[class*="card"]', 'div[class*="box"]',
+
+                # Fallback
+                'body'
             ]
 
-            # Buscar elemento clickeable
+            # Contar ventanas ANTES del click
+            pages_before = len(self.simulator.context.pages)
+
+            # Buscar elemento clickeable con múltiples intentos
+            click_success = False
             for selector in safe_click_targets:
                 try:
                     elements = await self.page.query_selector_all(selector)
                     if elements and len(elements) > 0:
-                        # Elegir elemento aleatorio
-                        target = random.choice(elements[:5])  # Solo primeros 5 para eficiencia
+                        # Elegir elemento aleatorio (más variedad)
+                        target = random.choice(elements[:10] if len(elements) > 10 else elements)
 
-                        # Scroll al elemento
+                        # Scroll al elemento de forma natural
                         await target.scroll_into_view_if_needed()
-                        await asyncio.sleep(random.uniform(0.3, 0.8))
+                        await asyncio.sleep(random.uniform(0.2, 0.5))
 
-                        # Click que activará el pop-under de Monetag
-                        await target.click()
-                        logger.info(f"💰 Click realizado en '{selector}' - Pop-under de Monetag activado")
+                        # MEJORADO: Click con manejo de errores y retry
+                        try:
+                            await target.click(timeout=3000)
+                            click_success = True
+                            logger.info(f"💰 Click realizado en '{selector}' - Intentando activar pop-under...")
+                        except Exception as click_error:
+                            # Si falla el click, intentar con JavaScript
+                            try:
+                                await target.evaluate("element => element.click()")
+                                click_success = True
+                                logger.info(f"💰 Click JS realizado en '{selector}' - Intentando activar pop-under...")
+                            except:
+                                continue  # Probar siguiente selector
 
-                        # Esperar a que se abra el pop-under
-                        await asyncio.sleep(random.uniform(1, 2))
+                        if click_success:
+                            # MEJORADO: Esperar más tiempo y revisar múltiples veces
+                            for check_attempt in range(3):  # 3 revisiones en 4 segundos
+                                await asyncio.sleep(random.uniform(1, 1.5))
 
-                        # Detectar y manejar pop-under (nueva pestaña/ventana)
-                        pages = self.simulator.context.pages
-                        if len(pages) > 1:
-                            logger.info(f"✅ Pop-under detectado! ({len(pages) - 1} ventanas nuevas)")
+                                # Detectar nuevas ventanas/pestañas
+                                pages_after = len(self.simulator.context.pages)
 
-                            # IMPORTANTE: Cerrar pop-under después de tiempo realista
-                            # Esto maximiza revenue (el anunciante paga por la apertura)
-                            for popup_page in pages[1:]:
-                                try:
-                                    # Esperar tiempo realista (Monetag cuenta viewability)
-                                    wait_time = random.uniform(8, 15)
-                                    logger.info(f"⏱️ Pop-under abierto durante {wait_time:.1f}s (maximizando revenue)")
-                                    await asyncio.sleep(wait_time)
+                                if pages_after > pages_before:
+                                    new_windows = pages_after - pages_before
+                                    logger.info(f"✅ ¡POP-UNDER DETECTADO! ({new_windows} ventana(s) nueva(s))")
 
-                                    # Opcional: Scroll en el pop-under para aumentar engagement
-                                    try:
-                                        await popup_page.evaluate("window.scrollBy(0, 300)")
-                                        await asyncio.sleep(random.uniform(1, 3))
-                                    except:
-                                        pass
+                                    # IMPORTANTE: Manejar TODAS las ventanas emergentes
+                                    all_pages = self.simulator.context.pages
+                                    for popup_page in all_pages[1:]:  # Todas excepto la principal
+                                        try:
+                                            # ===== VISUALIZACIÓN PROLONGADA PARA MAXIMIZAR CPM =====
+                                            # CPM se maximiza con:
+                                            # 1. Tiempo de visualización (viewability time)
+                                            # 2. Actividad del usuario (engagement)
+                                            # 3. Múltiples interacciones
 
-                                    await popup_page.close()
-                                    logger.info("🔒 Pop-under cerrado")
-                                except Exception as e:
-                                    logger.error(f"Error manejando pop-under: {e}")
+                                            view_time = random.uniform(20, 35)  # 20-35 segundos (AUMENTADO)
+                                            logger.info(f"⏱️ Pop-under: visualización PREMIUM de {view_time:.1f}s para maximizar CPM")
 
-                            # Registrar click exitoso
-                            self.session_data["ads_clicked"] += 1
-                            return True
-                        else:
-                            logger.warning("⚠️ Click realizado pero no se detectó pop-under (posible bloqueador)")
+                                            # Esperar carga inicial
+                                            await asyncio.sleep(random.uniform(2, 4))
 
-                        return True
+                                            # ===== SIMULAR USUARIO REAL VIENDO EL ANUNCIO =====
+                                            engagement_actions = [
+                                                # 1. Scroll progresivo (usuario leyendo)
+                                                ("scroll_down", random.randint(2, 4)),
+                                                # 2. Pausa de lectura
+                                                ("pause", random.uniform(3, 6)),
+                                                # 3. Scroll arriba (re-lectura)
+                                                ("scroll_up", random.randint(1, 2)),
+                                                # 4. Pausa contemplativa
+                                                ("pause", random.uniform(2, 4)),
+                                                # 5. Scroll al medio
+                                                ("scroll_middle", 1),
+                                                # 6. Pausa final
+                                                ("pause", random.uniform(3, 5)),
+                                            ]
 
-                except Exception as e:
+                                            time_spent = 0
+                                            for action_type, action_value in engagement_actions:
+                                                if time_spent >= view_time:
+                                                    break
+
+                                                try:
+                                                    if action_type == "scroll_down":
+                                                        for _ in range(int(action_value)):
+                                                            scroll_px = random.randint(200, 500)
+                                                            await popup_page.evaluate(f"window.scrollBy(0, {scroll_px})")
+                                                            pause = random.uniform(1, 2.5)
+                                                            await asyncio.sleep(pause)
+                                                            time_spent += pause
+                                                            logger.debug(f"  📜 Scroll down {scroll_px}px en pop-under")
+
+                                                    elif action_type == "scroll_up":
+                                                        for _ in range(int(action_value)):
+                                                            scroll_px = random.randint(100, 300)
+                                                            await popup_page.evaluate(f"window.scrollBy(0, -{scroll_px})")
+                                                            pause = random.uniform(0.8, 2)
+                                                            await asyncio.sleep(pause)
+                                                            time_spent += pause
+                                                            logger.debug(f"  📜 Scroll up {scroll_px}px en pop-under")
+
+                                                    elif action_type == "scroll_middle":
+                                                        await popup_page.evaluate("""
+                                                            window.scrollTo({
+                                                                top: document.body.scrollHeight / 2,
+                                                                behavior: 'smooth'
+                                                            })
+                                                        """)
+                                                        pause = random.uniform(1.5, 3)
+                                                        await asyncio.sleep(pause)
+                                                        time_spent += pause
+                                                        logger.debug(f"  📜 Scroll to middle en pop-under")
+
+                                                    elif action_type == "pause":
+                                                        await asyncio.sleep(action_value)
+                                                        time_spent += action_value
+                                                        logger.debug(f"  ⏸️ Pausa de {action_value:.1f}s (usuario leyendo)")
+
+                                                except Exception as action_error:
+                                                    logger.debug(f"  ⚠️ Acción '{action_type}' falló (normal): {action_error}")
+
+                                            # Si aún no alcanzamos el tiempo objetivo, esperar el resto
+                                            remaining_time = max(0, view_time - time_spent)
+                                            if remaining_time > 0:
+                                                logger.debug(f"  ⏱️ Esperando {remaining_time:.1f}s adicionales...")
+                                                await asyncio.sleep(remaining_time)
+
+                                            # BONUS: Intentar click en el anuncio (sin salir de la página)
+                                            # Esto aumenta MASIVAMENTE el CPM
+                                            try:
+                                                logger.info("💰 Intentando click en anuncio dentro del pop-under...")
+                                                clickable_elements = await popup_page.query_selector_all('a, button, div[onclick]')
+                                                if clickable_elements and len(clickable_elements) > 0:
+                                                    target_ad = random.choice(clickable_elements[:5])
+                                                    await target_ad.scroll_into_view_if_needed()
+                                                    await asyncio.sleep(random.uniform(0.5, 1.5))
+                                                    await target_ad.click()
+                                                    logger.info("✅ Click realizado en anuncio del pop-under! (CPM BOOST)")
+                                                    # Esperar para que el click se registre
+                                                    await asyncio.sleep(random.uniform(3, 6))
+                                            except Exception as click_error:
+                                                logger.debug(f"  Click en pop-under falló (normal): {click_error}")
+
+                                            # Cerrar pop-under después de visualización completa
+                                            await popup_page.close()
+                                            logger.info(f"🔒 Pop-under cerrado después de {view_time:.1f}s de visualización premium")
+
+                                        except Exception as popup_error:
+                                            logger.error(f"Error manejando pop-under: {popup_error}")
+                                            # Intentar cerrar de todas formas
+                                            try:
+                                                await popup_page.close()
+                                            except:
+                                                pass
+
+                                    # ÉXITO: Registrar click de ad
+                                    self.session_data["ads_clicked"] += new_windows
+                                    return True
+
+                            # Si después de 3 checks no se detectó pop-under
+                            logger.warning("⚠️ Click realizado pero no se detectó pop-under inmediatamente")
+                            logger.warning("   Esto puede significar:")
+                            logger.warning("   1. Bloqueador de pop-ups activo")
+                            logger.warning("   2. Monetag no configurado en este dominio")
+                            logger.warning("   3. Pop-under se activó pero no se detectó")
+
+                            # Aún así, esperar un poco más por si acaso
+                            await asyncio.sleep(2)
+
+                            # Check final
+                            if len(self.simulator.context.pages) > pages_before:
+                                logger.info("✅ Pop-under detectado en check final!")
+                                self.session_data["ads_clicked"] += 1
+                                return True
+
+                            return False  # Click hecho pero sin pop-under
+
+                except Exception as selector_error:
+                    logger.debug(f"Selector '{selector}' falló: {selector_error}")
                     continue  # Probar siguiente selector
 
-            logger.warning("⚠️ No se encontraron elementos seguros para activar pop-under")
+            if not click_success:
+                logger.warning("⚠️ No se pudo hacer click en ningún elemento para activar pop-under")
+
             return False
 
         except Exception as e:
-            logger.error(f"❌ Error activando pop-under de Monetag: {e}")
+            logger.error(f"❌ Error crítico activando pop-under de Monetag: {e}")
             return False
 
     async def _interact_with_ads(self, probability: float) -> bool:
