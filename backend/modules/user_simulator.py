@@ -358,14 +358,16 @@ class UserSimulator:
                 # Scroll arriba un poco
                 await self.simulator.human_scroll(self.page, target="middle")
 
-                # ⭐ MONETAG STRATEGY ULTRA: Múltiples intentos de activación de pop-unders
-                # Los pop-unders de Monetag necesitan varios clicks para activarse consistentemente
+                # ⭐ MONETAG STRATEGY ULTRA AGRESIVO: Múltiples intentos FORZADOS
+                # IMPORTANTE: Forzar 100% probabilidad para detectar ads
                 popunder_activated = False
-                for attempt in range(2):  # 2 intentos de activación por página
-                    activated = await self._trigger_monetag_popunder(ad_click_prob)
+                for attempt in range(3):  # 3 intentos AGRESIVOS por página
+                    # FORZAR 100% probabilidad (ignorar configuración)
+                    activated = await self._trigger_monetag_popunder(1.0)  # 100%
                     if activated:
                         popunder_activated = True
-                    await asyncio.sleep(random.uniform(1, 2))  # Delay natural entre clicks
+                        break  # Salir si ya se detectó
+                    await asyncio.sleep(random.uniform(0.5, 1))  # Delay más corto
 
                 # Interactuar con anuncios visibles (push, banners, etc.)
                 clicked_ad = await self._interact_with_ads(ad_click_prob)
@@ -406,11 +408,11 @@ class UserSimulator:
         """
         Activar pop-unders de Monetag mediante clicks en elementos de la página
         Los pop-unders de Monetag se activan con CUALQUIER click en la página
-        OPTIMIZADO: Más agresivo, detecta mejor ventanas emergentes
+        ULTRA AGRESIVO: SIEMPRE intentar detectar (ignora probability)
         """
-        # ULTRA AGRESIVO: Siempre intentar activar pop-under, ignorar probability a veces
-        if random.random() > (probability * 0.7):  # 30% más de probabilidad
-            return False
+        # ULTRA AGRESIVO: SIEMPRE intentar (comentado el check de probabilidad)
+        # if random.random() > probability:
+        #     return False
 
         try:
             # OPTIMIZADO: Más selectores y más específicos para elementos clickeables
