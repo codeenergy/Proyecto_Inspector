@@ -188,6 +188,47 @@ async def get_targets(db: Session = Depends(get_db)):
         logger.exception("Error obteniendo targets")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/targets/init-perfect", response_model=StatusResponse)
+async def init_perfect_targets(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """Inicializar los 18 targets perfectos de Monetag"""
+    try:
+        # Import the perfect targets configuration
+        import sys
+        from pathlib import Path
+        backend_path = str(Path(__file__).parent.parent)
+        if backend_path not in sys.path:
+            sys.path.append(backend_path)
+
+        from setup_perfect_monetag_targets import PERFECT_TARGETS
+
+        logger.info("🚀 Inicializando 18 targets perfectos de Monetag...")
+
+        # Clear existing targets
+        deleted = db.query(BotTarget).delete()
+        logger.info(f"🗑️ Eliminados {deleted} targets existentes")
+
+        # Create 18 perfect targets
+        created_count = 0
+        for target_data in PERFECT_TARGETS:
+            new_target = BotTarget(**target_data)
+            db.add(new_target)
+            created_count += 1
+
+        db.commit()
+        logger.info(f"✅ {created_count} targets creados exitosamente")
+
+        # Reload scheduler in background
+        background_tasks.add_task(reload_scheduler_safely)
+
+        return {
+            "status": "success",
+            "message": f"{created_count} targets perfectos de Monetag creados exitosamente"
+        }
+    except Exception as e:
+        logger.exception(f"Error inicializando targets perfectos: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/targets", response_model=StatusResponse)
 async def create_target(target: BotTargetCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Crear nuevo target"""
