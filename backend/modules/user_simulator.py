@@ -118,35 +118,82 @@ class HumanBehaviorSimulator:
 
         self.context.on("page", handle_popup)
 
-        # Inyectar scripts para evitar detección de bot y simular Push
+        # ULTRA STEALTH: Scripts avanzados para evadir detección de Monetag
         await self.context.add_init_script("""
-            // Ocultar webdriver
+            // 1. Ocultar TODAS las propiedades de webdriver
             Object.defineProperty(navigator, 'webdriver', {
                 get: () => undefined
             });
+            delete navigator.__proto__.webdriver;
 
-            // Simular plugins realistas
+            // 2. Simular plugins realistas de Chrome
             Object.defineProperty(navigator, 'plugins', {
-                get: () => [1, 2, 3, 4, 5]
+                get: () => {
+                    return [
+                        {name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', description: 'Portable Document Format'},
+                        {name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: ''},
+                        {name: 'Native Client', filename: 'internal-nacl-plugin', description: ''}
+                    ];
+                }
             });
-            
-            // Simular soporte de notificaciones activo
+
+            // 3. Simular soporte de notificaciones activo
             if (window.Notification) {
                 Object.defineProperty(window.Notification, 'permission', {
                     get: () => 'granted'
                 });
             }
 
-
-            // Simular idiomas
-            Object.defineProperty(navigator, 'languages', {
-                get: () => ['es-ES', 'es', 'en-US', 'en']
+            // 4. Ocultar automation
+            Object.defineProperty(navigator, 'maxTouchPoints', {
+                get: () => 1
             });
 
-            // Chrome runtime
+            // 5. Simular idiomas
+            Object.defineProperty(navigator, 'languages', {
+                get: () => ['en-US', 'en']
+            });
+
+            // 6. Chrome runtime completo
             window.chrome = {
-                runtime: {}
+                runtime: {},
+                loadTimes: function() {},
+                csi: function() {},
+                app: {}
             };
+
+            // 7. Permisos realistas
+            const originalQuery = window.navigator.permissions.query;
+            window.navigator.permissions.query = (parameters) => (
+                parameters.name === 'notifications' ?
+                    Promise.resolve({ state: 'granted' }) :
+                    originalQuery(parameters)
+            );
+
+            // 8. Canvas fingerprint randomization (anti-tracking)
+            const getImageData = CanvasRenderingContext2D.prototype.getImageData;
+            CanvasRenderingContext2D.prototype.getImageData = function() {
+                const imageData = getImageData.apply(this, arguments);
+                // Add tiny random noise to evade fingerprinting
+                for(let i = 0; i < imageData.data.length; i += 4) {
+                    if(Math.random() < 0.001) {
+                        imageData.data[i] = imageData.data[i] ^ 1;
+                    }
+                }
+                return imageData;
+            };
+
+            // 9. Remove playwright/automation markers
+            delete window.playwright;
+            delete window.__playwright;
+            delete window.__pw_manual;
+            delete window.__PW_inspect;
+
+            // 10. Simular comportamiento de usuario real
+            window.humanBehavior = true;
+            window.addEventListener('click', function() {
+                // Monetag tracking
+            });
         """)
 
         logger.info(f"Navegador iniciado: {settings.BROWSER_TYPE} ({viewport})")
@@ -469,17 +516,41 @@ class UserSimulator:
                         await target.scroll_into_view_if_needed()
                         await asyncio.sleep(random.uniform(0.2, 0.5))
 
-                        # MEJORADO: Click con manejo de errores y retry
+                        # ULTRA HUMANO: Click con movimiento de mouse real
                         try:
-                            await target.click(timeout=3000)
-                            click_success = True
-                            logger.info(f"💰 Click realizado en '{selector}' - Intentando activar pop-under...")
+                            # 1. Obtener posición del elemento
+                            box = await target.bounding_box()
+                            if box:
+                                # 2. Calcular centro del elemento con offset aleatorio (más humano)
+                                x = box['x'] + box['width'] / 2 + random.uniform(-10, 10)
+                                y = box['y'] + box['height'] / 2 + random.uniform(-10, 10)
+
+                                # 3. Mover mouse de forma natural (curva bezier simulada)
+                                await self.page.mouse.move(x - 100, y - 50)
+                                await asyncio.sleep(random.uniform(0.05, 0.15))
+                                await self.page.mouse.move(x - 50, y - 20)
+                                await asyncio.sleep(random.uniform(0.05, 0.15))
+                                await self.page.mouse.move(x, y)
+                                await asyncio.sleep(random.uniform(0.1, 0.3))
+
+                                # 4. Click con presión real (mousedown + mouseup)
+                                await self.page.mouse.down()
+                                await asyncio.sleep(random.uniform(0.05, 0.12))  # Tiempo de presión
+                                await self.page.mouse.up()
+
+                                click_success = True
+                                logger.info(f"💰 Click HUMANO realizado en '{selector}' (x={x:.0f}, y={y:.0f})")
+                            else:
+                                # Fallback: click normal
+                                await target.click(timeout=3000)
+                                click_success = True
+                                logger.info(f"💰 Click realizado en '{selector}'")
                         except Exception as click_error:
-                            # Si falla el click, intentar con JavaScript
+                            # Si falla, intentar con JavaScript como último recurso
                             try:
                                 await target.evaluate("element => element.click()")
                                 click_success = True
-                                logger.info(f"💰 Click JS realizado en '{selector}' - Intentando activar pop-under...")
+                                logger.info(f"💰 Click JS realizado en '{selector}'")
                             except:
                                 continue  # Probar siguiente selector
 
