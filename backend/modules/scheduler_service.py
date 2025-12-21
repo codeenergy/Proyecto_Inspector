@@ -49,7 +49,7 @@ class BotTrafficScheduler:
         self.running_sessions: Dict[str, bool] = {}
         self.failed_sessions: Dict[str, int] = {}  # Track retry counts
         self.max_retries = 3
-        self.max_concurrent_sessions = 6  # Railway Pro: 6 sesiones concurrentes (8GB RAM) - ESTABLE
+        self.max_concurrent_sessions = 2  # MODO LENTO: 2 sesiones max (parece humano)
         self.active_session_count = 0  # Track active sessions globally
         self.stats = {
             "total_sessions": 0,
@@ -119,14 +119,16 @@ class BotTrafficScheduler:
         logger.info("🚀 Iniciando Bot de Tráfico 24/7...")
 
         try:
-            # Job maestro que revisa targets cada 30 segundos y lanza sesiones
+            # MODO LENTO: Revisar targets cada 5-10 minutos (parece tráfico humano)
+            import random
+            interval_seconds = random.randint(300, 600)  # 5-10 minutos aleatorio
             self.scheduler.add_job(
                 self._check_and_launch_sessions,
-                IntervalTrigger(seconds=30),
+                IntervalTrigger(seconds=interval_seconds),
                 id="master_controller",
-                name="Controlador de Sesiones",
+                name="Controlador de Sesiones (MODO LENTO)",
                 replace_existing=True,  # Replace if already exists
-                misfire_grace_time=60  # Allow 60s grace time for missed executions
+                misfire_grace_time=120  # Allow 2min grace time
             )
 
             self.scheduler.start()
