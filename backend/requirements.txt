@@ -1,10 +1,19 @@
-# SUPER MINIMAL - Solo API (sin bot simulator)
+# Core Framework
 fastapi==0.109.0
 uvicorn[standard]==0.27.0
 pydantic==2.5.3
 pydantic-settings==2.1.0
-sqlalchemy==2.0.25
+
+# Web Automation (CRÍTICO para el bot)
+playwright==1.41.0
+
+# Scheduling & Background Tasks
 APScheduler==3.10.4
+
+# Database
+sqlalchemy==2.0.25
+
+# Utilities
 python-dotenv==1.0.0
 python-multipart==0.0.6
 pytz==2023.3
