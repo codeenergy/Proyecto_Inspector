@@ -1,12 +1,19 @@
 # Nixpacks configuration for Railway
 [phases.setup]
-nixPkgs = ["...", "chromium"]
+nixPkgs = ["...", "chromium", "google-chrome"]
 
 [phases.install]
 cmds = [
     "pip install -r backend/requirements.txt",
     "playwright install chromium",
     "playwright install-deps chromium"
+]
+
+[phases.build]
+cmds = [
+    "echo '✅ Chromium instalado para Playwright'",
+    "echo '⚠️ Undetected Chrome requiere Google Chrome que no está disponible en Railway'",
+    "echo '📌 Usando Playwright con stealth mode como alternativa'"
 ]
 
 [start]

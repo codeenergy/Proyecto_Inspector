@@ -49,7 +49,7 @@ class BotTrafficScheduler:
         self.running_sessions: Dict[str, bool] = {}
         self.failed_sessions: Dict[str, int] = {}  # Track retry counts
         self.max_retries = 3
-        self.max_concurrent_sessions = 2  # MODO LENTO: 2 sesiones max (parece humano)
+        self.max_concurrent_sessions = 6  # TRÁFICO SEO: 6 sesiones concurrentes para posicionamiento Google
         self.active_session_count = 0  # Track active sessions globally
         self.stats = {
             "total_sessions": 0,
