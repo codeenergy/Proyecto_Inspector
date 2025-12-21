@@ -503,6 +503,26 @@ class UserSimulator:
             self.simulator.popup_detected = False
             logger.debug(f"📊 Ventanas antes del click: {pages_before}")
 
+            # DIAGNÓSTICO: Verificar si scripts de Monetag están cargados
+            try:
+                monetag_scripts = await self.page.evaluate("""() => {
+                    const scripts = Array.from(document.querySelectorAll('script'));
+                    const monetagScripts = scripts.filter(s =>
+                        (s.src && (s.src.includes('monetag') || s.src.includes('gizokraijaw'))) ||
+                        s.dataset.zone
+                    );
+                    return monetagScripts.map(s => s.src || 'inline-script-zone-' + (s.dataset.zone || 'unknown'));
+                }""")
+                if monetag_scripts and len(monetag_scripts) > 0:
+                    logger.info(f"✅ Scripts Monetag detectados: {len(monetag_scripts)} scripts")
+                    for script in monetag_scripts[:3]:
+                        logger.debug(f"   → {script}")
+                else:
+                    logger.warning("⚠️ NO se detectaron scripts de Monetag en la página")
+                    logger.warning("   Monetag puede estar bloqueado o no cargando ads")
+            except Exception as e:
+                logger.debug(f"Error verificando scripts: {e}")
+
             # Buscar elemento clickeable con múltiples intentos
             click_success = False
             for selector in safe_click_targets:
