@@ -52,12 +52,49 @@ from contextlib import asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Initializing scheduler via lifespan...")
+
+    # AUTO-INIT: Crear 18 targets perfectos si no existen o solo hay example.com
+    try:
+        db = SessionLocal()
+        targets = db.query(BotTarget).all()
+
+        # Si no hay targets O solo hay 1 target (example.com), inicializar los 18
+        if len(targets) == 0 or (len(targets) == 1 and "example.com" in targets[0].url):
+            logger.info("🚀 AUTO-INIT: Detectado DB vacía o solo example.com. Creando 18 targets perfectos...")
+
+            # Import perfect targets config
+            import sys
+            from pathlib import Path
+            backend_path = str(Path(__file__).parent.parent)
+            if backend_path not in sys.path:
+                sys.path.append(backend_path)
+
+            from setup_perfect_monetag_targets import PERFECT_TARGETS
+
+            # Limpiar targets existentes
+            db.query(BotTarget).delete()
+
+            # Crear 18 targets perfectos
+            for target_data in PERFECT_TARGETS:
+                new_target = BotTarget(**target_data)
+                db.add(new_target)
+
+            db.commit()
+            logger.info(f"✅ AUTO-INIT: {len(PERFECT_TARGETS)} targets perfectos creados automáticamente")
+        else:
+            logger.info(f"✅ DB ya tiene {len(targets)} targets configurados")
+
+        db.close()
+    except Exception as e:
+        logger.error(f"⚠️ Error en auto-init de targets: {e}")
+
+    # Start scheduler
     scheduler = get_scheduler()
     if not scheduler.scheduler.running:
          scheduler.start()
-    
+
     yield
-    
+
     # Shutdown
     if scheduler.scheduler.running:
         scheduler.stop()
