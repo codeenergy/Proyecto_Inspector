@@ -645,137 +645,150 @@ class UserSimulator:
 
     async def _interact_with_ads(self, probability: float) -> bool:
         """
-        Buscar e interactuar con anuncios visibles de Monetag
-        NOTA: Los pop-unders se manejan en _trigger_monetag_popunder()
+        ULTRA AGRESIVO: Detectar e interactuar con los 4 formatos de Monetag
+        1. Push Notifications - Detectar y permitir
+        2. Direct Link - Detectar y clickear
+        3. Vignette Banner - Detectar, ver y cerrar como persona real
+        4. In-Page Push - Detectar, hover y a veces clickear
 
-        Formatos Monetag soportados:
-        - Multitag (all-in-one)
-        - Push Notifications
-        - In-Page Push (Banner nativo)
-        - Interstitial (pantalla completa)
-        - Vignette Banner
-        - Direct Link
+        SIEMPRE intenta interactuar (ignora probability para maximizar revenue)
         """
-        # Selectores completos para TODOS los formatos de Monetag
-        visible_ad_selectors = [
-            # ========== MULTITAG (All-in-One) ==========
-            'div[data-ad-client*="monetag"]',
-            '[data-ad-format="multitag"]',
-            'script[data-cfasync*="monetag"]',
+        ads_interacted = 0
 
-            # ========== PUSH NOTIFICATIONS ==========
-            'div[class*="push-notification"]',
-            'div[id*="push-notification"]',
-            'div[class*="notification-banner"]',
-            'div[class*="web-push"]',
-            '[data-push-notification]',
+        try:
+            # ========== 1. PUSH NOTIFICATIONS ==========
+            push_selectors = [
+                'div[class*="push"]', 'div[id*="push"]',
+                '[class*="notification"]', '[id*="notification"]',
+                'button[class*="allow"]', 'button[class*="accept"]',
+                '[data-push-notification]', '[class*="web-push"]'
+            ]
+            for selector in push_selectors:
+                try:
+                    elements = await self.page.query_selector_all(selector)
+                    if elements and len(elements) > 0:
+                        logger.info(f"🔔 PUSH NOTIFICATION detectado ({len(elements)} elementos)")
+                        # Hover y ver la notificación (como persona real)
+                        for elem in elements[:2]:
+                            try:
+                                await elem.scroll_into_view_if_needed()
+                                await asyncio.sleep(random.uniform(0.5, 1.5))
+                                await elem.hover()
+                                await asyncio.sleep(random.uniform(2, 4))  # Persona leyendo
+                                logger.debug(f"  📖 Viendo Push Notification...")
+                                ads_interacted += 1
+                            except:
+                                pass
+                        break
+                except:
+                    continue
 
-            # ========== IN-PAGE PUSH (Banner Nativo) ==========
-            'div[class*="in-page-push"]',
-            'div[class*="inpage-push"]',
-            'div[id*="inpage"]',
-            'div[class*="native-ad"]',
-            'div[class*="native-banner"]',
-            '[data-ad-format="in-page-push"]',
-            '[data-ad-type="inpage"]',
+            # ========== 2. DIRECT LINK ==========
+            direct_link_selectors = [
+                'a[href*="monetag"]', 'a[href*="gizokraijaw"]',
+                'a[data-ad-type="direct"]', 'a[class*="direct-link"]',
+                'a[data-monetag]', 'a[class*="ad-link"]'
+            ]
+            for selector in direct_link_selectors:
+                try:
+                    links = await self.page.query_selector_all(selector)
+                    if links and len(links) > 0:
+                        logger.info(f"🔗 DIRECT LINK detectado ({len(links)} links)")
+                        # Clickear link como persona real (70% probabilidad)
+                        if random.random() < 0.7:
+                            target_link = random.choice(links[:3])
+                            try:
+                                await target_link.scroll_into_view_if_needed()
+                                await asyncio.sleep(random.uniform(0.5, 1))
+                                await target_link.click()
+                                logger.info("✅ DIRECT LINK clickeado")
+                                ads_interacted += 1
+                                self.session_data["ads_clicked"] += 1
+                                # Esperar y cerrar tab si se abre
+                                await asyncio.sleep(random.uniform(3, 6))
+                                if len(self.simulator.context.pages) > 1:
+                                    await self.simulator.context.pages[-1].close()
+                            except:
+                                pass
+                        break
+                except:
+                    continue
 
-            # ========== INTERSTITIAL (Pantalla Completa) ==========
-            'div[class*="interstitial"]',
-            'div[id*="interstitial"]',
-            'div[class*="full-screen-ad"]',
-            'div[class*="overlay-ad"]',
-            'div[role="dialog"][class*="ad"]',
-            '[data-ad-format="interstitial"]',
-            'div[style*="position: fixed"][style*="z-index"][class*="ad"]',
+            # ========== 3. VIGNETTE BANNER (Pantalla Completa) ==========
+            vignette_selectors = [
+                'div[class*="vignette"]', 'div[id*="vignette"]',
+                '[data-ad-format="vignette"]', 'div[class*="interstitial"]',
+                'div[style*="position: fixed"][style*="z-index"]',
+                'div[class*="overlay"]', 'div[role="dialog"]'
+            ]
+            for selector in vignette_selectors:
+                try:
+                    vignettes = await self.page.query_selector_all(selector)
+                    if vignettes and len(vignettes) > 0:
+                        logger.info(f"📱 VIGNETTE BANNER detectado ({len(vignettes)} elementos)")
+                        # Ver el vignette como persona real
+                        for vig in vignettes[:1]:
+                            try:
+                                # Esperar visualización (5-10 segundos como persona real)
+                                view_time = random.uniform(5, 10)
+                                logger.info(f"  ⏱️ Viendo Vignette por {view_time:.1f}s")
+                                await asyncio.sleep(view_time)
+                                ads_interacted += 1
+                                # Intentar cerrar si hay botón close
+                                close_buttons = await self.page.query_selector_all('button[class*="close"], [aria-label*="close"], [class*="dismiss"]')
+                                if close_buttons:
+                                    await close_buttons[0].click()
+                                    logger.debug("  ❌ Vignette cerrado")
+                            except:
+                                pass
+                        break
+                except:
+                    continue
 
-            # ========== VIGNETTE BANNER ==========
-            'div[class*="vignette"]',
-            'div[id*="vignette"]',
-            'div[class*="vignette-banner"]',
-            '[data-ad-format="vignette"]',
-            'div[class*="sticky-banner"]',
+            # ========== 4. IN-PAGE PUSH (Banner Nativo) ==========
+            inpage_selectors = [
+                'div[class*="inpage"]', 'div[class*="in-page-push"]',
+                '[data-ad-format="in-page-push"]', 'div[class*="native-ad"]',
+                '[data-ad-type="inpage"]', 'iframe[src*="monetag"]',
+                'div[data-zone]', 'div[class*="native-banner"]'
+            ]
+            for selector in inpage_selectors:
+                try:
+                    inpage_ads = await self.page.query_selector_all(selector)
+                    if inpage_ads and len(inpage_ads) > 0:
+                        logger.info(f"📰 IN-PAGE PUSH detectado ({len(inpage_ads)} banners)")
+                        # Hover y ver banners nativos
+                        for ad in inpage_ads[:3]:
+                            try:
+                                await ad.scroll_into_view_if_needed()
+                                await asyncio.sleep(random.uniform(0.5, 1))
+                                await ad.hover()
+                                await asyncio.sleep(random.uniform(2, 4))  # Viewability
+                                logger.debug(f"  👀 Viendo In-Page Push...")
+                                ads_interacted += 1
+                                # 50% clickear
+                                if random.random() < 0.5:
+                                    await ad.click()
+                                    logger.info("  ✅ In-Page Push clickeado")
+                                    self.session_data["ads_clicked"] += 1
+                                    await asyncio.sleep(random.uniform(2, 4))
+                            except:
+                                pass
+                        break
+                except:
+                    continue
 
-            # ========== DIRECT LINK ==========
-            'a[href*="monetag"]',
-            'a[data-ad-type="direct"]',
-            'a[data-monetag="direct-link"]',
-            'a[class*="direct-link"]',
-
-            # ========== BANNER CLÁSICO (300x250, 728x90) ==========
-            'div[class*="banner-300x250"]',
-            'div[class*="banner-728x90"]',
-            'div[id*="banner-ad"]',
-
-            # ========== MONETAG GENERAL ==========
-            'iframe[src*="monetag"]',
-            'iframe[data-src*="monetag"]',
-            '[class*="monetag"]',
-            '[id*="monetag"]',
-            'div[data-monetag]',
-            '[data-ad-unit]',
-            '[data-ad-slot]',
-
-            # ========== GIZOKRAIJAW (Compatible con Monetag) ==========
-            'script[src*="gizokraijaw"]',
-            'script[data-zone]',
-            '[src*="vignette.min.js"]',
-            'div[data-zone]',
-
-            # Contenedores genéricos
-            '[class*="ad-container"]',
-            'div.advertisement',
-        ]
-
-        found_ads = []
-        for selector in visible_ad_selectors:
-            try:
-                elements = await self.page.query_selector_all(selector)
-                found_ads.extend(elements)
-            except:
-                continue
-
-        if not found_ads:
-            logger.debug("📊 No se encontraron anuncios visibles (normal con Monetag pop-unders)")
-            return False
-
-        logger.info(f"👀 Detectados {len(found_ads)} anuncios visibles")
-
-        # Hover sobre anuncios para viewability
-        for ad in found_ads[:2]:
-            try:
-                await ad.scroll_into_view_if_needed()
-                await ad.hover()
-                await asyncio.sleep(random.uniform(1, 2))
-            except:
-                pass
-
-        # Clickear anuncio visible si probabilidad lo permite
-        if random.random() < probability and len(found_ads) > 0:
-            target_ad = random.choice(found_ads)
-            try:
-                logger.info("🖱️ Click en anuncio visible...")
-                await target_ad.scroll_into_view_if_needed()
-                await asyncio.sleep(random.uniform(0.5, 1))
-                await target_ad.click()
-
-                self.session_data["ads_clicked"] += 1
-                logger.info("✅ Click exitoso en anuncio visible")
-
-                # Manejar ventanas emergentes
-                await asyncio.sleep(random.uniform(3, 5))
-                pages = self.simulator.context.pages
-                if len(pages) > 1:
-                    for popup in pages[1:]:
-                        try:
-                            await asyncio.sleep(random.uniform(8, 12))
-                            await popup.close()
-                        except:
-                            pass
-
+            # Log final
+            if ads_interacted > 0:
+                logger.info(f"✅ Total anuncios interactuados: {ads_interacted}")
                 return True
+            else:
+                logger.debug("📊 No se encontraron anuncios visibles de los 4 tipos")
+                return False
 
-            except Exception as e:
-                logger.debug(f"Click en anuncio visible falló: {e}")
+        except Exception as e:
+            logger.error(f"❌ Error en detección de ads: {e}")
+            return False
 
         return False
 
