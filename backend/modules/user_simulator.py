@@ -107,6 +107,17 @@ class HumanBehaviorSimulator:
             is_mobile=is_mobile,
         )
 
+        # CRÍTICO: Listener para detectar pop-ups/pop-unders automáticamente
+        self.popup_detected = False
+        self.popup_count = 0
+
+        async def handle_popup(page):
+            self.popup_detected = True
+            self.popup_count += 1
+            logger.info(f"🎯 POPUP #{self.popup_count} DETECTADO: {page.url[:100]}")
+
+        self.context.on("page", handle_popup)
+
         # Inyectar scripts para evitar detección de bot y simular Push
         await self.context.add_init_script("""
             // Ocultar webdriver
@@ -440,8 +451,10 @@ class UserSimulator:
                 'body'
             ]
 
-            # Contar ventanas ANTES del click
+            # Contar ventanas ANTES del click y resetear flag
             pages_before = len(self.simulator.context.pages)
+            self.simulator.popup_detected = False
+            logger.debug(f"📊 Ventanas antes del click: {pages_before}")
 
             # Buscar elemento clickeable con múltiples intentos
             click_success = False
@@ -471,14 +484,17 @@ class UserSimulator:
                                 continue  # Probar siguiente selector
 
                         if click_success:
-                            # MEJORADO: Esperar más tiempo y revisar múltiples veces
-                            for check_attempt in range(3):  # 3 revisiones en 4 segundos
-                                await asyncio.sleep(random.uniform(1, 1.5))
+                            # MEJORADO: Esperar más tiempo (hasta 8 segundos) y revisar múltiples veces
+                            for check_attempt in range(5):  # 5 revisiones en 8 segundos
+                                await asyncio.sleep(random.uniform(1.2, 2))
 
-                                # Detectar nuevas ventanas/pestañas
+                                # Detectar nuevas ventanas/pestañas (método dual)
                                 pages_after = len(self.simulator.context.pages)
+                                popup_flag = self.simulator.popup_detected
 
-                                if pages_after > pages_before:
+                                logger.debug(f"  🔍 Check #{check_attempt+1}: ventanas={pages_after}, popup_flag={popup_flag}")
+
+                                if pages_after > pages_before or popup_flag:
                                     new_windows = pages_after - pages_before
                                     logger.info(f"✅ ¡POP-UNDER DETECTADO! ({new_windows} ventana(s) nueva(s))")
 
