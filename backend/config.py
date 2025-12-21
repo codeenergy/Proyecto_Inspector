@@ -79,6 +79,9 @@ class Settings(BaseSettings):
     BROWSER_TIMEOUT: int = Field(default=30000, env="BROWSER_TIMEOUT")  # milliseconds
     USER_AGENT: Optional[str] = Field(default=None, env="USER_AGENT")
 
+    # Bot Simulator Engine
+    USE_UNDETECTED_CHROME: bool = Field(default=True, env="USE_UNDETECTED_CHROME")  # True = Undetected Chrome, False = Playwright
+
     # Performance Thresholds
     MAX_LOAD_TIME_SECONDS: float = Field(default=3.5, env="MAX_LOAD_TIME_SECONDS")
     MIN_LIGHTHOUSE_SCORE: int = Field(default=70, env="MIN_LIGHTHOUSE_SCORE")

@@ -968,6 +968,24 @@ class UserSimulator:
 
 # Función helper para uso externo
 async def run_bot_session(target_config: Dict) -> Dict:
-    """Helper function para ejecutar sesión de bot"""
-    simulator = UserSimulator()
-    return await simulator.run_bot_session(target_config)
+    """
+    Helper function para ejecutar sesión de bot
+    Usa Undetected Chrome o Playwright según configuración
+    """
+    from config import settings
+
+    # Decidir qué motor usar según configuración
+    if settings.USE_UNDETECTED_CHROME:
+        logger.info("🥷 Usando UNDETECTED CHROME (ultra sigiloso)")
+        try:
+            from modules.user_simulator_undetected import run_undetected_session
+            return await run_undetected_session(target_config)
+        except Exception as e:
+            logger.error(f"❌ Error con Undetected Chrome, fallback a Playwright: {e}")
+            # Fallback a Playwright si falla
+            simulator = UserSimulator()
+            return await simulator.run_bot_session(target_config)
+    else:
+        logger.info("🎭 Usando PLAYWRIGHT (modo estándar)")
+        simulator = UserSimulator()
+        return await simulator.run_bot_session(target_config)
