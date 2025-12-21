@@ -503,20 +503,44 @@ class UserSimulator:
             self.simulator.popup_detected = False
             logger.debug(f"📊 Ventanas antes del click: {pages_before}")
 
-            # DIAGNÓSTICO: Verificar si scripts de Monetag están cargados
+            # DIAGNÓSTICO AVANZADO: Detectar TODOS los scripts de Monetag (todos los dominios)
             try:
                 monetag_scripts = await self.page.evaluate("""() => {
                     const scripts = Array.from(document.querySelectorAll('script'));
-                    const monetagScripts = scripts.filter(s =>
-                        (s.src && (s.src.includes('monetag') || s.src.includes('gizokraijaw'))) ||
-                        s.dataset.zone
-                    );
-                    return monetagScripts.map(s => s.src || 'inline-script-zone-' + (s.dataset.zone || 'unknown'));
+
+                    // TODOS los dominios conocidos de Monetag
+                    const monetagDomains = [
+                        'monetag', 'gizokraijaw', '3nbf4.com', 'nap5k.com',
+                        'otieu.com', 'thubanoa.com', 'juicyads.com', 'propellerads',
+                        'adsterra', 'popads', 'popcash', 'admaven', 'clickadu',
+                        'exoclick', 'hilltopads', 'bidvertiser', 'revcontent'
+                    ];
+
+                    const monetagScripts = scripts.filter(s => {
+                        // 1. Scripts con data-zone (estándar de Monetag)
+                        if (s.dataset.zone) return true;
+
+                        // 2. Scripts con src que contenga dominios de ads
+                        if (s.src) {
+                            return monetagDomains.some(domain => s.src.includes(domain));
+                        }
+
+                        return false;
+                    });
+
+                    return monetagScripts.map(s => ({
+                        src: s.src || 'inline',
+                        zone: s.dataset.zone || 'N/A',
+                        async: s.async,
+                        defer: s.defer
+                    }));
                 }""")
                 if monetag_scripts and len(monetag_scripts) > 0:
                     logger.info(f"✅ Scripts Monetag detectados: {len(monetag_scripts)} scripts")
-                    for script in monetag_scripts[:3]:
-                        logger.debug(f"   → {script}")
+                    for i, script in enumerate(monetag_scripts):
+                        src = script.get('src', 'inline')[:60] + '...' if len(script.get('src', 'inline')) > 60 else script.get('src', 'inline')
+                        zone = script.get('zone', 'N/A')
+                        logger.info(f"   [{i+1}] Zone: {zone} | {src}")
                 else:
                     logger.warning("⚠️ NO se detectaron scripts de Monetag en la página")
                     logger.warning("   Monetag puede estar bloqueado o no cargando ads")

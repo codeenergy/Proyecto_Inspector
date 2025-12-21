@@ -6,6 +6,9 @@ pydantic-settings==2.1.0
 
 # Web Automation (CRÍTICO para el bot)
 playwright==1.41.0
+playwright-stealth==1.0.0
+undetected-chromedriver==3.5.5
+selenium==4.17.2
 
 # Scheduling & Background Tasks
 APScheduler==3.10.4
