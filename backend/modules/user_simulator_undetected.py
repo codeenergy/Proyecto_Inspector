@@ -36,32 +36,38 @@ class UndetectedUserSimulator:
         if viewport is None:
             viewport = {"width": 1920, "height": 1080}
 
-        options = uc.ChromeOptions()
-
-        # ULTRA STEALTH: Configuración para evitar detección
-        options.add_argument(f'--window-size={viewport["width"]},{viewport["height"]}')
-        options.add_argument('--disable-blink-features=AutomationControlled')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-gpu')
-
-        # User agent realista
-        user_agents = [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        ]
-        options.add_argument(f'user-agent={random.choice(user_agents)}')
-
-        # Preferencias adicionales
-        prefs = {
-            'profile.default_content_setting_values.notifications': 1,  # Permitir notificaciones
-            'profile.managed_default_content_settings.popups': 1,  # Permitir pop-ups
-        }
-        options.add_experimental_option('prefs', prefs)
-
         logger.info("🚀 Iniciando Undetected Chrome...")
-        self.driver = uc.Chrome(options=options, version_main=120)
+
+        try:
+            # Crear opciones manualmente
+            options = uc.ChromeOptions()
+
+            # Configuración básica
+            options.add_argument(f'--window-size={viewport["width"]},{viewport["height"]}')
+            options.add_argument('--disable-blink-features=AutomationControlled')
+            options.add_argument('--disable-dev-shm-usage')
+            options.add_argument('--no-sandbox')
+
+            # NO headless para evitar detección
+            options.headless = False
+
+            # Permitir popups
+            prefs = {
+                'profile.default_content_setting_values.notifications': 1,
+                'profile.managed_default_content_settings.popups': 1,
+            }
+            options.add_experimental_option('prefs', prefs)
+
+            # Crear driver con opciones
+            self.driver = uc.Chrome(options=options, driver_executable_path=None)
+
+        except Exception as e:
+            logger.error(f"Error iniciando Chrome: {e}")
+            # Fallback: intentar sin opciones
+            logger.info("Intentando fallback sin opciones...")
+            self.driver = uc.Chrome()
+            self.driver.set_window_size(viewport["width"], viewport["height"])
+
         self.initial_window = self.driver.current_window_handle
 
         logger.info("✅ Undetected Chrome iniciado exitosamente")
@@ -110,90 +116,203 @@ class UndetectedUserSimulator:
             logger.error(f"Error en click: {e}")
             return False
 
-    def detect_monetag_scripts(self):
-        """Detectar TODOS los scripts de Monetag en la página"""
+    def find_all_buttons(self):
+        """Encontrar TODOS los botones en la página"""
         try:
-            scripts = self.driver.execute_script("""
-                const scripts = Array.from(document.querySelectorAll('script'));
-
-                // TODOS los dominios conocidos de Monetag y ad networks
-                const adDomains = [
-                    'monetag', 'gizokraijaw', '3nbf4.com', 'nap5k.com',
-                    'otieu.com', 'thubanoa.com', 'juicyads.com', 'propellerads',
-                    'adsterra', 'popads', 'popcash', 'admaven', 'clickadu',
-                    'exoclick', 'hilltopads', 'bidvertiser', 'revcontent'
+            buttons = self.driver.execute_script("""
+                // Buscar todos los elementos clickeables
+                const selectors = [
+                    'button',
+                    'a[href]',
+                    '[role="button"]',
+                    'input[type="button"]',
+                    'input[type="submit"]',
+                    '[onclick]',
+                    '.btn',
+                    '.button'
                 ];
 
-                const adScripts = scripts.filter(s => {
-                    if (s.dataset.zone) return true;
-                    if (s.src) {
-                        return adDomains.some(domain => s.src.includes(domain));
-                    }
-                    return false;
+                const allButtons = [];
+                selectors.forEach(selector => {
+                    document.querySelectorAll(selector).forEach(el => {
+                        // Verificar que sea visible
+                        const rect = el.getBoundingClientRect();
+                        if (rect.width > 0 && rect.height > 0) {
+                            allButtons.push({
+                                tag: el.tagName,
+                                text: el.innerText?.substring(0, 50) || el.value || 'Sin texto',
+                                href: el.href || null,
+                                visible: true
+                            });
+                        }
+                    });
                 });
 
-                return adScripts.map(s => ({
-                    src: s.src || 'inline',
-                    zone: s.dataset.zone || 'N/A',
-                    async: s.async,
-                    defer: s.defer
-                }));
+                return allButtons;
             """)
 
-            if scripts and len(scripts) > 0:
-                logger.info(f"✅ Scripts detectados: {len(scripts)} scripts")
-                for i, script in enumerate(scripts):
-                    src = script['src'][:60] + '...' if len(script['src']) > 60 else script['src']
-                    zone = script['zone']
-                    logger.info(f"   [{i+1}] Zone: {zone} | {src}")
-            else:
-                logger.warning("⚠️ NO se detectaron scripts de ads en la página")
-
-            return scripts
+            logger.info(f"🔘 Botones encontrados: {len(buttons)}")
+            return buttons
 
         except Exception as e:
-            logger.error(f"Error detectando scripts: {e}")
+            logger.error(f"Error buscando botones: {e}")
             return []
 
-    def detect_popups(self):
-        """Detectar pop-unders y nuevas ventanas"""
+    def detect_monetag_links(self):
+        """Detectar enlaces de Monetag (Direct links)"""
+        try:
+            monetag_links = self.driver.execute_script("""
+                const links = Array.from(document.querySelectorAll('a[href]'));
+
+                // Dominios de Monetag conocidos
+                const monetagDomains = [
+                    'monetag', 'gizokraijaw', '3nbf4.com', 'nap5k.com',
+                    'otieu.com', 'thubanoa.com'
+                ];
+
+                return links
+                    .filter(link => monetagDomains.some(domain => link.href.includes(domain)))
+                    .map(link => ({
+                        href: link.href,
+                        text: link.innerText?.substring(0, 30) || 'Sin texto'
+                    }));
+            """)
+
+            if monetag_links and len(monetag_links) > 0:
+                logger.info(f"💰 Enlaces de Monetag encontrados: {len(monetag_links)}")
+
+            return monetag_links
+
+        except Exception as e:
+            logger.error(f"Error detectando enlaces Monetag: {e}")
+            return []
+
+    def handle_new_windows(self, wait_time: tuple = (3, 6)):
+        """Manejar nuevas ventanas/pestañas como usuario normal"""
         try:
             all_windows = self.driver.window_handles
 
             if len(all_windows) > 1:
-                logger.info(f"🎯 POP-UNDER DETECTADO! Total ventanas: {len(all_windows)}")
-                self.popup_detected = True
+                new_windows_count = len(all_windows) - 1
+                logger.info(f"🎯 {new_windows_count} ventana(s) nueva(s) detectada(s)")
 
-                # Cerrar ventanas extra (pop-unders)
+                # Procesar cada ventana nueva
                 for window in all_windows:
                     if window != self.initial_window:
                         self.driver.switch_to.window(window)
-                        logger.info(f"   → Cerrando pop-under: {self.driver.title[:50]}")
+                        current_url = self.driver.current_url
+
+                        logger.info(f"   📱 Ventana nueva: {current_url[:60]}...")
+
+                        # Esperar como usuario normal leyendo
+                        wait = random.uniform(wait_time[0], wait_time[1])
+                        logger.info(f"   ⏳ Esperando {wait:.1f}s (comportamiento humano)...")
+                        time.sleep(wait)
+
+                        # Scroll rápido en la ventana nueva
+                        try:
+                            self.human_scroll(distance=300, steps=3)
+                        except:
+                            pass
+
+                        logger.info(f"   ✅ Cerrando ventana")
                         self.driver.close()
 
                 # Volver a ventana principal
                 self.driver.switch_to.window(self.initial_window)
-                return True
+                logger.info(f"   🔙 Volviendo a ventana principal")
+                return new_windows_count
 
-            return False
+            return 0
 
         except Exception as e:
-            logger.error(f"Error detectando popups: {e}")
-            return False
+            logger.error(f"Error manejando ventanas: {e}")
+            # Intentar volver a la ventana principal
+            try:
+                self.driver.switch_to.window(self.initial_window)
+            except:
+                pass
+            return 0
+
+    def click_all_buttons(self):
+        """Hacer clic en TODOS los botones como usuario normal"""
+        clicked_count = 0
+        windows_opened = 0
+
+        try:
+            # Buscar todos los botones visibles
+            buttons_selectors = [
+                'button:not([style*="display: none"])',
+                'a[href]:not([style*="display: none"])',
+                '[role="button"]',
+                'input[type="button"]',
+                'input[type="submit"]',
+                '.btn',
+                '.button'
+            ]
+
+            for selector in buttons_selectors:
+                try:
+                    elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                    logger.info(f"🔍 Selector '{selector}': {len(elements)} elementos")
+
+                    # Hacer clic en cada elemento
+                    for i, element in enumerate(elements[:10]):  # Limitar a 10 por selector
+                        try:
+                            # Verificar si es visible
+                            if not element.is_displayed():
+                                continue
+
+                            # Guardar número de ventanas antes del click
+                            windows_before = len(self.driver.window_handles)
+
+                            # Click humano
+                            text = element.text[:30] if element.text else "Sin texto"
+                            logger.info(f"   🖱️ Clickeando botón {i+1}: '{text}'")
+
+                            if self.human_click(element):
+                                clicked_count += 1
+
+                                # Esperar a que se abran nuevas ventanas
+                                time.sleep(random.uniform(0.5, 1.0))
+
+                                # Verificar si se abrieron nuevas ventanas
+                                windows_after = len(self.driver.window_handles)
+                                if windows_after > windows_before:
+                                    new_windows = self.handle_new_windows()
+                                    windows_opened += new_windows
+
+                                # Esperar entre clicks
+                                time.sleep(random.uniform(1.0, 2.0))
+
+                        except Exception as e:
+                            logger.debug(f"   ⚠️ Error en elemento: {str(e)[:50]}")
+                            continue
+
+                except Exception as e:
+                    logger.debug(f"⚠️ Error con selector {selector}: {str(e)[:50]}")
+                    continue
+
+            logger.info(f"✅ Clicks completados: {clicked_count} botones | {windows_opened} ventanas abiertas")
+            return clicked_count, windows_opened
+
+        except Exception as e:
+            logger.error(f"❌ Error haciendo clicks: {e}")
+            return clicked_count, windows_opened
 
     async def run_session(self, config: Dict):
-        """Ejecutar sesión completa de tráfico"""
+        """Ejecutar sesión completa de tráfico - MODO USUARIO NORMAL"""
         url = config.get("url")
         target_pageviews = config.get("target_pageviews", 8)
-        ad_click_probability = config.get("ad_click_probability", 0.65)
         viewport = config.get("viewport", {"width": 1920, "height": 1080})
 
-        logger.info(f"▶️ Iniciando sesión UNDETECTED para: {url}")
+        logger.info(f"▶️ Iniciando sesión MODO USUARIO NORMAL para: {url}")
+        logger.info(f"   🎯 Objetivo: Hacer clic en TODOS los botones como usuario real")
 
         stats = {
             "pages_visited": 0,
-            "ads_clicked": 0,
-            "popups_detected": 0
+            "buttons_clicked": 0,
+            "windows_opened": 0
         }
 
         try:
@@ -205,89 +324,95 @@ class UndetectedUserSimulator:
             self.driver.get(url)
 
             # Esperar carga completa
-            time.sleep(random.uniform(3, 5))
+            wait_time = random.uniform(4, 7)
+            logger.info(f"⏳ Esperando {wait_time:.1f}s para carga completa...")
+            time.sleep(wait_time)
 
-            # Limpiar sessionStorage para vignette
+            # Limpiar sessionStorage
             self.driver.execute_script("sessionStorage.clear();")
-            logger.info("🧹 SessionStorage limpiado para permitir Vignette")
-
-            # Detectar scripts de Monetag
-            scripts = self.detect_monetag_scripts()
-
-            # Esperar 15 segundos para que scripts de Monetag se inicialicen
-            logger.info("⏳ Esperando 15s para inicialización de scripts Monetag...")
-            time.sleep(15)
+            logger.info("🧹 SessionStorage limpiado")
 
             # Visitar páginas
             for page_num in range(target_pageviews):
+                logger.info(f"\n{'='*60}")
                 logger.info(f"📄 Página #{page_num + 1}/{target_pageviews}")
+                logger.info(f"{'='*60}")
 
-                # Scroll natural
-                self.human_scroll()
+                # Scroll natural para ver la página
+                logger.info("📜 Scrolleando como usuario normal...")
+                self.human_scroll(distance=random.randint(400, 800))
                 time.sleep(random.uniform(2, 4))
 
-                # Click con probabilidad para activar ads
-                if random.random() < ad_click_probability:
-                    try:
-                        # Buscar elementos clickeables
-                        safe_selectors = ['main h1', 'main h2', 'main p', 'article', 'main div']
+                # HACER CLIC EN TODOS LOS BOTONES
+                logger.info("\n🔘 Buscando y clickeando TODOS los botones...")
+                buttons_clicked, windows_opened = self.click_all_buttons()
 
-                        for selector in safe_selectors:
-                            try:
-                                elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
-                                if elements:
-                                    element = random.choice(elements[:5] if len(elements) > 5 else elements)
-
-                                    # Detectar popups ANTES del click
-                                    windows_before = len(self.driver.window_handles)
-
-                                    # Click humano
-                                    if self.human_click(element):
-                                        time.sleep(random.uniform(0.5, 1.0))
-
-                                        # Detectar popups DESPUÉS del click
-                                        if self.detect_popups():
-                                            stats["ads_clicked"] += 1
-                                            stats["popups_detected"] += 1
-                                        else:
-                                            logger.warning("⚠️ Click realizado pero no se detectó pop-under")
-
-                                        break
-
-                            except (NoSuchElementException, TimeoutException):
-                                continue
-
-                    except Exception as e:
-                        logger.error(f"Error en click: {e}")
-
+                stats["buttons_clicked"] += buttons_clicked
+                stats["windows_opened"] += windows_opened
                 stats["pages_visited"] += 1
 
-                # Navegar a siguiente página o home
+                logger.info(f"\n📊 Stats de esta página:")
+                logger.info(f"   🖱️ Botones clickeados: {buttons_clicked}")
+                logger.info(f"   📱 Ventanas abiertas: {windows_opened}")
+
+                # Navegar a siguiente página
                 if page_num < target_pageviews - 1:
+                    logger.info(f"\n🔄 Navegando a siguiente página...")
+
                     try:
                         # Buscar links internos
                         links = self.driver.find_elements(By.CSS_SELECTOR, 'a[href^="/"], a[href*="' + url + '"]')
-                        if links:
-                            link = random.choice(links[:10] if len(links) > 10 else links)
+
+                        # Filtrar links de navegación (no Monetag)
+                        internal_links = []
+                        for link in links:
+                            try:
+                                href = link.get_attribute('href')
+                                # Excluir enlaces de Monetag
+                                if href and not any(domain in href for domain in ['monetag', 'gizokraijaw', '3nbf4', 'nap5k', 'otieu', 'thubanoa']):
+                                    internal_links.append(link)
+                            except:
+                                continue
+
+                        if internal_links:
+                            link = random.choice(internal_links[:15])
+                            logger.info(f"   🔗 Navegando a: {link.get_attribute('href')[:60]}")
                             self.human_click(link)
-                            time.sleep(random.uniform(2, 4))
+                            time.sleep(random.uniform(3, 5))
                         else:
                             # Volver al home
+                            logger.info(f"   🏠 Volviendo al home")
                             self.driver.get(url)
-                            time.sleep(random.uniform(2, 3))
-                    except:
-                        self.driver.get(url)
-                        time.sleep(random.uniform(2, 3))
+                            time.sleep(random.uniform(3, 5))
 
-            logger.info(f"✅ Sesión completada: {stats}")
+                    except Exception as e:
+                        logger.warning(f"   ⚠️ Error navegando, volviendo al home: {e}")
+                        self.driver.get(url)
+                        time.sleep(random.uniform(3, 5))
+
+            logger.info(f"\n{'='*60}")
+            logger.info(f"✅ SESIÓN COMPLETADA")
+            logger.info(f"{'='*60}")
+            logger.info(f"📊 Estadísticas finales:")
+            logger.info(f"   📄 Páginas visitadas: {stats['pages_visited']}")
+            logger.info(f"   🖱️ Botones clickeados: {stats['buttons_clicked']}")
+            logger.info(f"   📱 Ventanas abiertas: {stats['windows_opened']}")
+            logger.info(f"{'='*60}\n")
+
             return {
                 "success": True,
                 "stats": stats,
-                "log": [f"Páginas visitadas: {stats['pages_visited']}", f"Ads clickeados: {stats['ads_clicked']}"]
+                "log": [
+                    f"Páginas visitadas: {stats['pages_visited']}",
+                    f"Botones clickeados: {stats['buttons_clicked']}",
+                    f"Ventanas abiertas: {stats['windows_opened']}"
+                ]
             }
 
         except Exception as e:
             logger.error(f"❌ Error en sesión: {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 "success": False,
                 "stats": stats,
