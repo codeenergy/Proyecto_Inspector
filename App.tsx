@@ -30,6 +30,8 @@ interface LogEntry {
   status: string;
   pages: number;
   ads: number;
+  buttons?: number;    // NUEVO: Botones clickeados
+  windows?: number;    // NUEVO: Ventanas abiertas
   duration: number;
   time: string;
 }
@@ -421,9 +423,10 @@ function App() {
                           </div>
                           <div className="text-slate-300 font-medium mb-1.5">Target #{log.target_id}</div>
                           <div className="text-slate-400 flex flex-wrap gap-2">
-                            <span className="bg-slate-800/50 px-2 py-0.5 rounded">Visited: {log.pages}</span>
-                            <span className="bg-slate-800/50 px-2 py-0.5 rounded">Ads: {log.ads}</span>
-                            <span className="bg-slate-800/50 px-2 py-0.5 rounded">{log.duration.toFixed(1)}s</span>
+                            <span className="bg-slate-800/50 px-2 py-0.5 rounded">📄 Páginas: {log.pages}</span>
+                            <span className="bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30">🖐️ Botones: {log.buttons || 0}</span>
+                            <span className="bg-orange-500/10 text-orange-400 px-2 py-0.5 rounded border border-orange-500/30">🔗 Links: {log.windows || 0}</span>
+                            <span className="bg-slate-800/50 px-2 py-0.5 rounded">⏱️ {log.duration.toFixed(1)}s</span>
                           </div>
                         </div>
                       ))}

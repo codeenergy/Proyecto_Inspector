@@ -376,6 +376,8 @@ async def get_live_sessions(db: Session = Depends(get_db)):
                 "status": s.status,
                 "pages": s.pages_visited,
                 "ads": s.ads_clicked,
+                "buttons": getattr(s, 'buttons_clicked', 0),  # NUEVO: Botones clickeados
+                "windows": getattr(s, 'windows_opened', 0),   # NUEVO: Ventanas abiertas
                 "duration": s.duration_seconds if s.duration_seconds else 0,
                 "time": s.start_time.strftime("%H:%M:%S")
             })
