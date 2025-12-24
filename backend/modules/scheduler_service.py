@@ -55,6 +55,8 @@ class BotTrafficScheduler:
             "total_sessions": 0,
             "total_pageviews": 0,
             "total_ad_clicks": 0,
+            "total_buttons_clicked": 0,  # NUEVO: Total botones clickeados
+            "total_windows_opened": 0,   # NUEVO: Total ventanas/direct links
             "total_failures": 0
         }
 
@@ -206,15 +208,23 @@ class BotTrafficScheduler:
             if result.get("success"):
                 self.failed_sessions[target_id] = 0
 
-                # Actualizar stats en memoria
+                # Actualizar stats en memoria - MODO USUARIO NORMAL
                 self.stats["total_sessions"] += 1
                 pages_visited = 0
                 ads_clicked = 0
+                buttons_clicked = 0
+                windows_opened = 0
+
                 if result.get("stats"):
                     pages_visited = result["stats"].get("pages_visited", 0)
                     ads_clicked = result["stats"].get("ads_clicked", 0)
+                    buttons_clicked = result["stats"].get("buttons_clicked", 0)  # NUEVO
+                    windows_opened = result["stats"].get("windows_opened", 0)    # NUEVO
+
                     self.stats["total_pageviews"] += pages_visited
                     self.stats["total_ad_clicks"] += ads_clicked
+                    self.stats["total_buttons_clicked"] += buttons_clicked  # NUEVO
+                    self.stats["total_windows_opened"] += windows_opened    # NUEVO
 
                 logger.info(f"✅ Sesión finalizada exitosamente: {result['stats']}")
             else:
@@ -246,9 +256,14 @@ class BotTrafficScheduler:
 
                     pages_visited = 0
                     ads_clicked = 0
+                    buttons_clicked = 0
+                    windows_opened = 0
+
                     if result.get("stats"):
                         pages_visited = result["stats"].get("pages_visited", 0)
                         ads_clicked = result["stats"].get("ads_clicked", 0)
+                        buttons_clicked = result["stats"].get("buttons_clicked", 0)  # NUEVO
+                        windows_opened = result["stats"].get("windows_opened", 0)    # NUEVO
 
                     new_session = BotSession(
                         target_id=target_config["id"],
@@ -257,6 +272,8 @@ class BotTrafficScheduler:
                         duration_seconds=duration,
                         pages_visited=pages_visited,
                         ads_clicked=ads_clicked,
+                        buttons_clicked=buttons_clicked,  # NUEVO
+                        windows_opened=windows_opened,    # NUEVO
                         status="completed" if result.get("success") else "failed",
                         log=json.dumps(result.get("log", [])[:10])
                     )

@@ -7,14 +7,15 @@ import {
   Target,
   MousePointer2,
   Eye,
-  Activity,
   Trash2,
   Edit,
   Terminal,
   Clock,
   LogOut,
   Menu,
-  X
+  X,
+  Hand,
+  ExternalLink
 } from 'lucide-react';
 import { BotTarget, BotStats } from './types';
 import { CampaignModal } from './components/CampaignModal';
@@ -237,46 +238,57 @@ function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
-          {/* Stats Grid */}
+          {/* Stats Grid - MODO USUARIO NORMAL */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                {/* Card 1: Botones Clickeados */}
                 <div className="group bg-gradient-to-br from-slate-900/80 to-slate-800/50 backdrop-blur-sm border border-slate-700/50 hover:border-blue-500/50 p-6 rounded-2xl transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-slate-400 text-sm font-medium mb-1">Total Sessions</p>
-                      <h3 className="text-3xl md:text-4xl font-bold text-white mt-2 tabular-nums">{stats.total_sessions}</h3>
+                      <p className="text-slate-400 text-sm font-medium mb-1">Botones Clickeados</p>
+                      <h3 className="text-3xl md:text-4xl font-bold text-blue-400 mt-2 tabular-nums">{stats.total_buttons_clicked || 0}</h3>
+                      <p className="text-xs text-slate-500 mt-1">Clicks totales en botones</p>
                     </div>
                     <div className="bg-blue-500/10 p-3 rounded-xl group-hover:bg-blue-500/20 transition-colors">
-                      <Activity className="text-blue-400" size={28} />
+                      <Hand className="text-blue-400" size={28} />
                     </div>
                   </div>
                 </div>
+
+                {/* Card 2: Páginas Visitadas */}
                 <div className="group bg-gradient-to-br from-slate-900/80 to-slate-800/50 backdrop-blur-sm border border-slate-700/50 hover:border-emerald-500/50 p-6 rounded-2xl transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/10 hover:-translate-y-1">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-slate-400 text-sm font-medium mb-1">Pages Visited</p>
+                      <p className="text-slate-400 text-sm font-medium mb-1">Páginas Visitadas</p>
                       <h3 className="text-3xl md:text-4xl font-bold text-emerald-400 mt-2 tabular-nums">{stats.total_pageviews}</h3>
+                      <p className="text-xs text-slate-500 mt-1">Navegación interna</p>
                     </div>
                     <div className="bg-emerald-500/10 p-3 rounded-xl group-hover:bg-emerald-500/20 transition-colors">
                       <Eye className="text-emerald-400" size={28} />
                     </div>
                   </div>
                 </div>
-                <div className="group bg-gradient-to-br from-slate-900/80 to-slate-800/50 backdrop-blur-sm border border-slate-700/50 hover:border-yellow-500/50 p-6 rounded-2xl transition-all duration-300 hover:shadow-xl hover:shadow-yellow-500/10 hover:-translate-y-1">
+
+                {/* Card 3: Direct Links Abiertos (Monetag) */}
+                <div className="group bg-gradient-to-br from-slate-900/80 to-slate-800/50 backdrop-blur-sm border border-slate-700/50 hover:border-orange-500/50 p-6 rounded-2xl transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/10 hover:-translate-y-1">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-slate-400 text-sm font-medium mb-1">Ads Clicked</p>
-                      <h3 className="text-3xl md:text-4xl font-bold text-yellow-400 mt-2 tabular-nums">{stats.total_ad_clicks}</h3>
+                      <p className="text-slate-400 text-sm font-medium mb-1">Direct Links Abiertos</p>
+                      <h3 className="text-3xl md:text-4xl font-bold text-orange-400 mt-2 tabular-nums">{stats.total_windows_opened || 0}</h3>
+                      <p className="text-xs text-slate-500 mt-1">Ventanas de Monetag</p>
                     </div>
-                    <div className="bg-yellow-500/10 p-3 rounded-xl group-hover:bg-yellow-500/20 transition-colors">
-                      <MousePointer2 className="text-yellow-400" size={28} />
+                    <div className="bg-orange-500/10 p-3 rounded-xl group-hover:bg-orange-500/20 transition-colors">
+                      <ExternalLink className="text-orange-400" size={28} />
                     </div>
                   </div>
                 </div>
+
+                {/* Card 4: Targets Activos */}
                 <div className="group bg-gradient-to-br from-slate-900/80 to-slate-800/50 backdrop-blur-sm border border-slate-700/50 hover:border-purple-500/50 p-6 rounded-2xl transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-slate-400 text-sm font-medium mb-1">Active Targets</p>
+                      <p className="text-slate-400 text-sm font-medium mb-1">Targets Activos</p>
                       <h3 className="text-3xl md:text-4xl font-bold text-purple-400 mt-2 tabular-nums">{targets.length}</h3>
+                      <p className="text-xs text-slate-500 mt-1">Sitios configurados</p>
                     </div>
                     <div className="bg-purple-500/10 p-3 rounded-xl group-hover:bg-purple-500/20 transition-colors">
                       <Target className="text-purple-400" size={28} />

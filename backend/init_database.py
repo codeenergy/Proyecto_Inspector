@@ -49,6 +49,8 @@ class BotSession(Base):
     duration_seconds = Column(Float)
     pages_visited = Column(Integer, default=0)
     ads_clicked = Column(Integer, default=0)
+    buttons_clicked = Column(Integer, default=0)  # NUEVO: Botones clickeados
+    windows_opened = Column(Integer, default=0)   # NUEVO: Ventanas/Direct Links abiertas
     status = Column(String(50), default="running")  # running, completed, failed
     log = Column(Text)  # Log resumen de la sesión
 
