@@ -39,6 +39,19 @@ inspector.db
 .DS_Store
 Thumbs.db
 nul
+NUL
 
+# Deployment
 .vercel
 .env*.local
+
+# Documentation (no subir)
+*.md
+!backend/README.md
+
+# Tests
+test_*.py
+
+# Config files
+nixpacks.toml
+.railwayignore
